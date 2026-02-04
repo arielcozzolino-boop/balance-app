@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Balance</title>
+
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -19,7 +20,9 @@
   <!-- Contenido -->
   <main>
 
-    <!-- PANTALLA HOY -->
+    <!-- =========================
+         PANTALLA HOY
+    ========================== -->
     <section id="hoy" class="screen active">
       <h1>Hoy</h1>
 
@@ -27,17 +30,31 @@
       <p>🏃 Gastadas: 0 kcal</p>
       <p>⚖️ Balance: 0 kcal</p>
 
-      <button class="primary" onclick="sacarFoto()">📸 Sacar foto</button>
+      <!-- Botón cámara real -->
+      <button class="primary" onclick="abrirCamara()">📸 Sacar foto</button>
       <button onclick="agregarComida()">➕ Agregar comida</button>
+
+      <!-- Input oculto para cámara -->
+      <input
+        type="file"
+        id="cameraInput"
+        accept="image/*"
+        capture="environment"
+        style="display:none"
+      />
     </section>
 
-    <!-- PANTALLA COMER -->
+    <!-- =========================
+         PANTALLA COMER
+    ========================== -->
     <section id="comer" class="screen">
       <h1>Comer</h1>
       <p>Acá va la carga de comida / foto</p>
     </section>
 
-    <!-- PANTALLA PROGRESO -->
+    <!-- =========================
+         PANTALLA PROGRESO
+    ========================== -->
     <section id="progreso" class="screen">
       <h1>Progreso</h1>
       <div id="grafico"></div>

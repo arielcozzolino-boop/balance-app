@@ -76,7 +76,6 @@ function dibujarGrafico() {
 
   let dias = Object.keys(historial).slice(-7);
 
-  // 👉 si es el primer día, mostramos HOY
   if (dias.length === 0) {
     dias = [hoy];
     historial[hoy] = consumidas - gastadas;
@@ -102,22 +101,44 @@ function dibujarGrafico() {
 }
 
 /* =========================================================
-   SACAR FOTO (SIMULADO IA)
+   CAMARA REAL – ABRIR CAMARA
 ========================================================= */
-function sacarFoto() {
-  const estimacion = 650;
-
-  const confirmar = confirm(
-    `📸 Análisis de la comida\n\n` +
-    `Estimación: ${estimacion} kcal\n\n` +
-    `¿Agregar al día de hoy?`
-  );
-
-  if (confirmar) {
-    consumidas += estimacion;
-    calcularBalance();
+function abrirCamara() {
+  const input = document.getElementById('cameraInput');
+  if (input) {
+    input.click();
   }
 }
+
+/* =========================================================
+   CAMARA REAL – FOTO TOMADA
+========================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('cameraInput');
+  if (!input) return;
+
+  input.addEventListener('change', function (event) {
+    const archivo = event.target.files[0];
+    if (!archivo) return;
+
+    // 👉 por ahora estimación fija (después IA real)
+    const estimacion = 650;
+
+    const confirmar = confirm(
+      `📸 Foto tomada correctamente\n\n` +
+      `Estimación provisoria: ${estimacion} kcal\n\n` +
+      `¿Agregar al día de hoy?`
+    );
+
+    if (confirmar) {
+      consumidas += estimacion;
+      calcularBalance();
+    }
+
+    // reset para permitir otra foto
+    event.target.value = '';
+  });
+});
 
 /* =========================================================
    AGREGAR COMIDA MANUAL
@@ -131,5 +152,6 @@ function agregarComida() {
    INICIO
 ========================================================= */
 calcularBalance();
+
 
 
