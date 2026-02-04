@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balance</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Navegación inferior -->
+  <nav>
+    <button onclick="showScreen('hoy')">Hoy</button>
+    <button onclick="showScreen('comer')">Comer</button>
+    <button onclick="showScreen('progreso')">Progreso</button>
+  </nav>
+
+  <!-- Contenido -->
+  <main>
+
+    <!-- PANTALLA HOY -->
+    <section id="hoy" class="screen active">
+      <h1>Hoy</h1>
+
+      <p>🔥 Consumidas: 0 kcal</p>
+      <p>🏃 Gastadas: 0 kcal</p>
+      <p>⚖️ Balance: 0 kcal</p>
+
+      <button class="primary" onclick="sacarFoto()">📸 Sacar foto</button>
+      <button onclick="agregarComida()">➕ Agregar comida</button>
+    </section>
+
+    <!-- PANTALLA COMER -->
+    <section id="comer" class="screen">
+      <h1>Comer</h1>
+      <p>Acá va la carga de comida / foto</p>
+    </section>
+
+    <!-- PANTALLA PROGRESO -->
+    <section id="progreso" class="screen">
+      <h1>Progreso</h1>
+      <div id="grafico"></div>
+    </section>
+
+  </main>
+
+  <!-- Lógica -->
+  <script src="app.js"></script>
+
+</body>
+</html>
