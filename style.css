@@ -1,64 +1,107 @@
+/* --- RESET --- */
+* {
+  box-sizing: border-box;
+}
+
+/* --- BASE --- */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f5f5f7;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #f2f2f7;
+  color: #111;
 }
 
-nav {
-  display: flex;
-  justify-content: space-around;
-  background: white;
-  padding: 10px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  border-top: 1px solid #ddd;
-}
-
-nav button {
-  background: none;
-  border: none;
-  font-size: 16px;
-}
-
+/* --- CONTENIDO --- */
 main {
-  padding: 20px;
-  padding-bottom: 80px;
+  max-width: 430px; /* ancho iPhone */
+  margin: 0 auto;
+  padding: 20px 16px 100px;
 }
 
+/* --- TITULOS --- */
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* --- TEXTOS --- */
+p {
+  font-size: 18px;
+  margin: 12px 0;
+}
+
+/* --- TARJETA --- */
 .screen {
   display: none;
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .screen.active {
   display: block;
 }
 
-.primary {
-  background: black;
-  color: white;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  width: 100%;
-  margin-top: 10px;
-}/* --- Estilo iPhone --- */
-main {
-  max-width: 420px;
-  margin: auto;
-}
-
-h1 {
-  font-size: 28px;
-}
-
-p {
-  font-size: 18px;
-}
-
+/* --- BOTONES --- */
 button {
+  width: 100%;
   font-size: 18px;
   padding: 14px;
+  margin-top: 12px;
   border-radius: 14px;
+  border: none;
+  background: #e5e5ea;
+  color: #000;
 }
+
+button.primary {
+  background: #000;
+  color: white;
+  font-weight: 600;
+}
+
+/* --- NAVBAR iOS --- */
+nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: #ffffffcc;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #ddd;
+}
+
+nav button {
+  width: auto;
+  background: none;
+  font-size: 16px;
+  color: #007aff;
+  margin: 0;
+}
+
+/* --- GRAFICO --- */
+#grafico {
+  display: flex;
+  align-items: flex-end;
+  height: 180px;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.barra {
+  flex: 1;
+  border-radius: 8px 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: white;
+  padding-top: 4px;
+}
+
 
