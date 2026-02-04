@@ -1,32 +1,45 @@
-/* ---- NAVEGACION ENTRE PANTALLAS ---- */
+/* =========================================================
+   NAVEGACION ENTRE PANTALLAS
+========================================================= */
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(screen => {
     screen.classList.remove('active');
   });
-
   document.getElementById(id).classList.add('active');
 }
 
-/* ---- FECHA DE HOY ---- */
+/* =========================================================
+   FECHA Y DIA NUEVO
+========================================================= */
 const hoy = new Date().toISOString().split('T')[0];
 const ultimoDia = localStorage.getItem('fecha');
 
-/* ---- SI ES UN DIA NUEVO, RESETEAMOS ---- */
 if (ultimoDia !== hoy) {
   localStorage.setItem('fecha', hoy);
   localStorage.setItem('consumidas', 0);
 }
 
-/* ---- DATOS ---- */
+/* =========================================================
+   DATOS PRINCIPALES
+========================================================= */
 let consumidas = localStorage.getItem('consumidas')
   ? parseInt(localStorage.getItem('consumidas'))
   : 0;
 
 let gastadas = localStorage.getItem('gastadas')
   ? parseInt(localStorage.getItem('gastadas'))
-  : 2200; // base diaria simulada
+  : 2200;
 
-/* ---- FUNCION PRINCIPAL ---- */
+/* =========================================================
+   HISTORIAL PARA PROGRESO
+========================================================= */
+let historial = localStorage.getItem('historial')
+  ? JSON.parse(localStorage.getItem('historial'))
+  : {};
+
+/* =========================================================
+   FUNCION PRINCIPAL
+========================================================= */
 function calcularBalance() {
   const balance = consumidas - gastadas;
 
@@ -38,17 +51,59 @@ function calcularBalance() {
     `⚖️ Balance: ${balance} kcal`;
 
   const section = document.getElementById('hoy');
-
   section.style.background =
     balance < 0 ? '#e6f7ec' :
     balance < 200 ? '#fff7e6' :
     '#fdecea';
 
+  // Guardar datos diarios
+  historial[hoy] = balance;
+  localStorage.setItem('historial', JSON.stringify(historial));
   localStorage.setItem('consumidas', consumidas);
   localStorage.setItem('gastadas', gastadas);
+
+  dibujarGrafico();
 }
 
-/* ---- SACAR FOTO (SIMULADO IA) ---- */
+/* =========================================================
+   GRAFICO DE PROGRESO (SIEMPRE MUESTRA ALGO)
+========================================================= */
+function dibujarGrafico() {
+  const grafico = document.getElementById('grafico');
+  if (!grafico) return;
+
+  grafico.innerHTML = '';
+
+  let dias = Object.keys(historial).slice(-7);
+
+  // 👉 si es el primer día, mostramos HOY
+  if (dias.length === 0) {
+    dias = [hoy];
+    historial[hoy] = consumidas - gastadas;
+  }
+
+  dias.forEach(dia => {
+    const valor = historial[dia];
+
+    const barra = document.createElement('div');
+    barra.className = 'barra';
+
+    const altura = Math.max(Math.abs(valor) / 5, 40);
+    barra.style.height = Math.min(altura, 180) + 'px';
+
+    barra.style.background =
+      valor < 0 ? '#2ecc71' :
+      valor < 200 ? '#f1c40f' :
+      '#e74c3c';
+
+    barra.innerText = valor;
+    grafico.appendChild(barra);
+  });
+}
+
+/* =========================================================
+   SACAR FOTO (SIMULADO IA)
+========================================================= */
 function sacarFoto() {
   const estimacion = 650;
 
@@ -64,14 +119,17 @@ function sacarFoto() {
   }
 }
 
-/* ---- AGREGAR COMIDA MANUAL ---- */
+/* =========================================================
+   AGREGAR COMIDA MANUAL
+========================================================= */
 function agregarComida() {
   consumidas += 300;
   calcularBalance();
 }
 
-/* ---- INICIO ---- */
+/* =========================================================
+   INICIO
+========================================================= */
 calcularBalance();
-
 
 
