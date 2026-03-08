@@ -31,33 +31,37 @@ let gastadas = localStorage.getItem('gastadas')
   : 2200;
 
 /* =========================================================
-   HISTORIAL PARA PROGRESO
+   HISTORIAL
 ========================================================= */
 let historial = localStorage.getItem('historial')
   ? JSON.parse(localStorage.getItem('historial'))
   : {};
 
 /* =========================================================
-   FUNCION PRINCIPAL
+   BALANCE
 ========================================================= */
 function calcularBalance() {
+
   const balance = consumidas - gastadas;
 
   document.querySelector('#hoy p:nth-child(2)').innerText =
     `🔥 Consumidas: ${consumidas} kcal`;
+
   document.querySelector('#hoy p:nth-child(3)').innerText =
     `🏃 Gastadas: ${gastadas} kcal`;
+
   document.querySelector('#hoy p:nth-child(4)').innerText =
     `⚖️ Balance: ${balance} kcal`;
 
   const section = document.getElementById('hoy');
+
   section.style.background =
     balance < 0 ? '#e6f7ec' :
     balance < 200 ? '#fff7e6' :
     '#fdecea';
 
-  // Guardar datos diarios
   historial[hoy] = balance;
+
   localStorage.setItem('historial', JSON.stringify(historial));
   localStorage.setItem('consumidas', consumidas);
   localStorage.setItem('gastadas', gastadas);
@@ -66,9 +70,10 @@ function calcularBalance() {
 }
 
 /* =========================================================
-   GRAFICO DE PROGRESO (SIEMPRE MUESTRA ALGO)
+   GRAFICO
 ========================================================= */
 function dibujarGrafico() {
+
   const grafico = document.getElementById('grafico');
   if (!grafico) return;
 
@@ -82,6 +87,7 @@ function dibujarGrafico() {
   }
 
   dias.forEach(dia => {
+
     const valor = historial[dia];
 
     const barra = document.createElement('div');
@@ -96,12 +102,15 @@ function dibujarGrafico() {
       '#e74c3c';
 
     barra.innerText = valor;
+
     grafico.appendChild(barra);
+
   });
+
 }
 
 /* =========================================================
-   CAMARA REAL – ABRIR CAMARA
+   ABRIR CAMARA
 ========================================================= */
 function abrirCamara() {
   const input = document.getElementById('cameraInput');
@@ -111,47 +120,84 @@ function abrirCamara() {
 }
 
 /* =========================================================
-   CAMARA REAL – FOTO TOMADA
+   FOTO + IA
 ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
+
   const input = document.getElementById('cameraInput');
   if (!input) return;
 
-  input.addEventListener('change', function (event) {
+  input.addEventListener('change', async function (event) {
+
     const archivo = event.target.files[0];
     if (!archivo) return;
 
-    // 👉 por ahora estimación fija (después IA real)
-    const estimacion = 650;
+    const reader = new FileReader();
 
-    const confirmar = confirm(
-      `📸 Foto tomada correctamente\n\n` +
-      `Estimación provisoria: ${estimacion} kcal\n\n` +
-      `¿Agregar al día de hoy?`
-    );
+    reader.onload = async function () {
 
-    if (confirmar) {
-      consumidas += estimacion;
-      calcularBalance();
-    }
+      const base64 = reader.result;
 
-    // reset para permitir otra foto
+      try {
+
+        const respuesta = await fetch(
+          "https://calorias-foto.ariel-cozzolino.workers.dev/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              image: base64
+            })
+          }
+        );
+
+        const data = await respuesta.json();
+
+        const estimacion = data.calorias || 650;
+
+        const confirmar = confirm(
+          `📸 Foto analizada\n\n` +
+          `Estimación IA: ${estimacion} kcal\n\n` +
+          `¿Agregar al día de hoy?`
+        );
+
+        if (confirmar) {
+          consumidas += estimacion;
+          calcularBalance();
+        }
+
+      } catch (err) {
+
+        alert("Error analizando la imagen");
+
+      }
+
+    };
+
+    reader.readAsDataURL(archivo);
+
     event.target.value = '';
+
   });
+
 });
 
 /* =========================================================
-   AGREGAR COMIDA MANUAL
+   AGREGAR MANUAL
 ========================================================= */
 function agregarComida() {
+
   consumidas += 300;
+
   calcularBalance();
+
 }
 
 /* =========================================================
    INICIO
 ========================================================= */
 calcularBalance();
-
 
 
