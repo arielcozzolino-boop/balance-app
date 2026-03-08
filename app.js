@@ -21,10 +21,6 @@ let gastadas = localStorage.getItem('gastadas')
   ? parseInt(localStorage.getItem('gastadas'))
   : 2200;
 
-let historial = localStorage.getItem('historial')
-  ? JSON.parse(localStorage.getItem('historial'))
-  : {};
-
 function calcularBalance() {
 
   const balance = consumidas - gastadas;
@@ -38,11 +34,7 @@ function calcularBalance() {
   document.querySelector('#hoy p:nth-child(4)').innerText =
     `⚖️ Balance: ${balance} kcal`;
 
-  historial[hoy] = balance;
-
-  localStorage.setItem('historial', JSON.stringify(historial));
   localStorage.setItem('consumidas', consumidas);
-
 }
 
 function abrirCamara() {
@@ -82,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await respuesta.json();
 
         const calorias = data.calorias || 650;
-        const comida = data.comida || "Comida";
+        const comida = data.comida || "Comida detectada";
 
         const confirmar = confirm(
           `📸 ${comida}\n\n🔥 ${calorias} kcal\n\n¿Agregar al día de hoy?`
@@ -113,4 +105,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 calcularBalance();
-
