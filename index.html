@@ -1,69 +1,90 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Balance</title>
 
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css" />
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Balance</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+
 </head>
+
 <body>
 
-  <!-- Navegación inferior -->
-  <nav>
-    <button onclick="showScreen('hoy')">Hoy</button>
-    <button onclick="showScreen('comer')">Comer</button>
-    <button onclick="showScreen('progreso')">Progreso</button>
-  </nav>
+<!-- Navegación -->
+<nav>
 
-  <!-- Contenido -->
-  <main>
+<button onclick="showScreen('hoy')">Hoy</button>
+<button onclick="showScreen('comer')">Comer</button>
+<button onclick="showScreen('progreso')">Progreso</button>
 
-    <!-- =========================
-         PANTALLA HOY
-    ========================== -->
-    <section id="hoy" class="screen active">
-      <h1>Hoy</h1>
+</nav>
 
-      <p>🔥 Consumidas: 0 kcal</p>
-      <p>🏃 Gastadas: 0 kcal</p>
-      <p>⚖️ Balance: 0 kcal</p>
 
-      <!-- Botón cámara real -->
-      <button class="primary" onclick="abrirCamara()">📸 Sacar foto</button>
-      <button onclick="agregarComida()">➕ Agregar comida</button>
+<main>
 
-      <!-- Input oculto para cámara -->
-      <input
-        type="file"
-        id="cameraInput"
-        accept="image/*"
-        capture="environment"
-        style="display:none"
-      />
-    </section>
+<!-- ===============================
+PANTALLA HOY
+=============================== -->
 
-    <!-- =========================
-         PANTALLA COMER
-    ========================== -->
-    <section id="comer" class="screen">
-      <h1>Comer</h1>
-      <p>Acá va la carga de comida / foto</p>
-    </section>
+<section id="hoy" class="screen active">
 
-    <!-- =========================
-         PANTALLA PROGRESO
-    ========================== -->
-    <section id="progreso" class="screen">
-      <h1>Progreso</h1>
-      <div id="grafico"></div>
-    </section>
+<h2>Hoy</h2>
 
-  </main>
+<p>🔥 Consumidas: 0 kcal</p>
+<p>🏃 Gastadas: 2200 kcal</p>
+<p>⚖️ Balance: 0 kcal</p>
 
-  <!-- Lógica -->
-  <script src="app.js"></script>
+<button onclick="abrirCamara()">📷 Sacar foto</button>
+
+<input
+type="file"
+id="cameraInput"
+accept="image/*"
+capture="environment"
+style="display:none"
+/>
+
+<h3>Registro</h3>
+
+<div id="registro"></div>
+
+</section>
+
+
+<!-- ===============================
+PANTALLA COMER
+=============================== -->
+
+<section id="comer" class="screen">
+
+<h2>Agregar comida</h2>
+
+<button onclick="abrirCamara()">📷 Sacar foto</button>
+
+</section>
+
+
+<!-- ===============================
+PANTALLA PROGRESO
+=============================== -->
+
+<section id="progreso" class="screen">
+
+<h2>Progreso</h2>
+
+<div id="grafico"></div>
+
+</section>
+
+
+</main>
+
+<script src="app.js"></script>
 
 </body>
+
 </html>
