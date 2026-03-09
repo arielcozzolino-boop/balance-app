@@ -6,20 +6,19 @@ function showScreen(id) {
 }
 
 const hoy = new Date().toISOString().split('T')[0];
-const ultimoDia = localStorage.getItem('fecha');
+
+const ultimoDia = localStorage.getItem("fecha");
 
 if (ultimoDia !== hoy) {
-  localStorage.setItem('fecha', hoy);
-  localStorage.setItem('consumidas', 0);
+  localStorage.setItem("fecha", hoy);
+  localStorage.setItem("consumidas", 0);
 }
 
-let consumidas = localStorage.getItem('consumidas')
-  ? parseInt(localStorage.getItem('consumidas'))
+let consumidas = localStorage.getItem("consumidas")
+  ? parseInt(localStorage.getItem("consumidas"))
   : 0;
 
-let gastadas = localStorage.getItem('gastadas')
-  ? parseInt(localStorage.getItem('gastadas'))
-  : 2200;
+let gastadas = 2200;
 
 function calcularBalance() {
 
@@ -34,20 +33,73 @@ function calcularBalance() {
   document.querySelector('#hoy p:nth-child(4)').innerText =
     `⚖️ Balance: ${balance} kcal`;
 
-  localStorage.setItem('consumidas', consumidas);
+  localStorage.setItem("consumidas", consumidas);
+
+  mostrarRegistro();
+
 }
 
 function abrirCamara() {
-  document.getElementById('cameraInput').click();
+  document.getElementById("cameraInput").click();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function guardarComida(comida, calorias) {
 
-  const input = document.getElementById('cameraInput');
+  const hoy = new Date().toISOString().split("T")[0];
 
-  input.addEventListener('change', async function (event) {
+  let registro = localStorage.getItem("registroComidas")
+    ? JSON.parse(localStorage.getItem("registroComidas"))
+    : {};
+
+  if (!registro[hoy]) {
+    registro[hoy] = [];
+  }
+
+  registro[hoy].push({
+    comida: comida,
+    calorias: calorias
+  });
+
+  localStorage.setItem("registroComidas", JSON.stringify(registro));
+
+}
+
+function mostrarRegistro() {
+
+  const hoy = new Date().toISOString().split("T")[0];
+
+  const registro = JSON.parse(localStorage.getItem("registroComidas")) || {};
+
+  const comidasHoy = registro[hoy] || [];
+
+  const contenedor = document.getElementById("registro");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  comidasHoy.forEach(item => {
+
+    const div = document.createElement("div");
+
+    div.innerText = `${item.comida} — ${item.calorias} kcal`;
+
+    contenedor.appendChild(div);
+
+  });
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const input = document.getElementById("cameraInput");
+
+  if (!input) return;
+
+  input.addEventListener("change", async function (event) {
 
     const archivo = event.target.files[0];
+
     if (!archivo) return;
 
     const reader = new FileReader();
@@ -74,7 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await respuesta.json();
 
         const calorias = data.calorias || 650;
-        const comida = data.comida || "Comida detectada";
+
+        const comida = data.comida || "Comida";
 
         const confirmar = confirm(
           `📸 ${comida}\n\n🔥 ${calorias} kcal\n\n¿Agregar al día de hoy?`
@@ -83,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirmar) {
 
           consumidas += calorias;
+
+          guardarComida(comida, calorias);
 
           calcularBalance();
 
@@ -98,10 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     reader.readAsDataURL(archivo);
 
-    event.target.value = '';
+    event.target.value = "";
 
   });
 
 });
 
 calcularBalance();
+mostrarRegistro();
