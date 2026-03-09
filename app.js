@@ -2,7 +2,7 @@
 NAVEGACION
 =============================== */
 
-function showScreen(id) {
+function showScreen(id){
 
 document.querySelectorAll(".screen").forEach(s=>{
 s.classList.remove("active")
@@ -107,7 +107,7 @@ const contenedor = document.getElementById("registro")
 
 if(!contenedor) return
 
-contenedor.innerHTML = ""
+contenedor.innerHTML=""
 
 comidasHoy.forEach(item=>{
 
@@ -254,8 +254,59 @@ event.target.value=""
 })
 
 /* ===============================
+APPLE HEALTH (GOOGLE SHEET)
+=============================== */
+
+async function cargarCaloriasAppleHealth(){
+
+try{
+
+const res = await fetch(
+"https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json"
+)
+
+const text = await res.text()
+
+const json = JSON.parse(text.substr(47).slice(0,-2))
+
+const rows = json.table.rows
+
+let caloriasActividad = 0
+
+rows.forEach(r=>{
+
+const fecha = r.c[1]?.v
+const calorias = r.c[3]?.v
+
+if(!fecha || !calorias) return
+
+const fechaISO = new Date(fecha).toISOString().split("T")[0]
+
+if(fechaISO === hoy){
+
+caloriasActividad = calorias
+
+}
+
+})
+
+gastadas = 1800 + caloriasActividad
+
+calcularBalance()
+
+}catch(e){
+
+console.log("No se pudieron leer calorías Apple Health")
+
+}
+
+}
+
+/* ===============================
 INICIO
 =============================== */
+
+cargarCaloriasAppleHealth()
 
 calcularBalance()
 
