@@ -4,7 +4,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Balance</title>
 
 <link rel="manifest" href="manifest.json">
@@ -14,22 +13,16 @@
 
 <body>
 
-<!-- Navegación -->
 <nav>
-
 <button onclick="showScreen('hoy')">Hoy</button>
 <button onclick="showScreen('comer')">Comer</button>
 <button onclick="showScreen('progreso')">Progreso</button>
-
+<button onclick="showScreen('historial')">Historial</button>
 </nav>
-
 
 <main>
 
-<!-- ===============================
-PANTALLA HOY
-=============================== -->
-
+<!-- HOY -->
 <section id="hoy" class="screen active">
 
 <h2>Hoy</h2>
@@ -40,51 +33,34 @@ PANTALLA HOY
 
 <button onclick="abrirCamara()">📷 Sacar foto</button>
 
-<input
-type="file"
-id="cameraInput"
-accept="image/*"
-capture="environment"
-style="display:none"
-/>
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
 
 <h3>Registro</h3>
-
 <div id="registro"></div>
 
 </section>
 
-
-<!-- ===============================
-PANTALLA COMER
-=============================== -->
-
+<!-- COMER -->
 <section id="comer" class="screen">
-
 <h2>Agregar comida</h2>
-
 <button onclick="abrirCamara()">📷 Sacar foto</button>
-
 </section>
 
-
-<!-- ===============================
-PANTALLA PROGRESO
-=============================== -->
-
+<!-- PROGRESO -->
 <section id="progreso" class="screen">
-
 <h2>Progreso</h2>
-
 <div id="grafico"></div>
-
 </section>
 
+<!-- HISTORIAL -->
+<section id="historial" class="screen">
+<h2>Historial</h2>
+<div id="historialDias"></div>
+</section>
 
 </main>
 
 <script src="app.js"></script>
 
 </body>
-
 </html>
