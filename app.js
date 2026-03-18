@@ -1,35 +1,16 @@
-/* ===============================
-NAVEGACION
-=============================== */
-
 function showScreen(id){
-
-document.querySelectorAll(".screen").forEach(s=>{
-s.classList.remove("active")
-})
-
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"))
 document.getElementById(id).classList.add("active")
-
 }
-
-/* ===============================
-FECHA
-=============================== */
 
 const hoy = new Date().toISOString().split("T")[0]
 
 const ultimoDia = localStorage.getItem("fecha")
 
 if(ultimoDia !== hoy){
-
 localStorage.setItem("fecha",hoy)
 localStorage.setItem("consumidas",0)
-
 }
-
-/* ===============================
-DATOS
-=============================== */
 
 let consumidas = localStorage.getItem("consumidas")
 ? parseInt(localStorage.getItem("consumidas"))
@@ -60,13 +41,17 @@ document.querySelector("#hoy p:nth-child(4)").innerText =
 
 localStorage.setItem("consumidas",consumidas)
 
-historial[hoy] = balance
+historial[hoy] = {
+consumidas: consumidas,
+gastadas: gastadas,
+balance: balance
+}
 
 localStorage.setItem("historial",JSON.stringify(historial))
 
 mostrarRegistro()
-
 dibujarGrafico()
+mostrarHistorial()
 
 }
 
@@ -81,21 +66,17 @@ let registro = localStorage.getItem("registroComidas")
 : {}
 
 if(!registro[hoy]){
-
 registro[hoy] = []
-
 }
 
-registro[hoy].push({
-
-comida: comida,
-calorias: calorias
-
-})
+registro[hoy].push({comida,calorias})
 
 localStorage.setItem("registroComidas",JSON.stringify(registro))
-
 }
+
+/* ===============================
+MOSTRAR REGISTRO
+=============================== */
 
 function mostrarRegistro(){
 
@@ -110,50 +91,33 @@ if(!contenedor) return
 contenedor.innerHTML=""
 
 comidasHoy.forEach(item=>{
-
 const div = document.createElement("div")
-
 div.innerText = `${item.comida} — ${item.calorias} kcal`
-
 contenedor.appendChild(div)
-
 })
 
 }
 
 /* ===============================
-GRAFICO SEMANAL
+GRAFICO
 =============================== */
 
 function dibujarGrafico(){
 
 const grafico = document.getElementById("grafico")
-
 if(!grafico) return
 
 grafico.innerHTML=""
 
 let dias = Object.keys(historial).slice(-7)
 
-if(dias.length===0){
-
-dias=[hoy]
-
-historial[hoy]=consumidas-gastadas
-
-}
-
 dias.forEach(dia=>{
 
-const valor = historial[dia]
+const valor = historial[dia]?.balance || 0
 
 const barra = document.createElement("div")
 
-barra.className="barra"
-
-const altura = Math.max(Math.abs(valor)/5,40)
-
-barra.style.height=Math.min(altura,180)+"px"
+barra.style.height = Math.min(Math.abs(valor)/5,180)+"px"
 
 barra.style.background =
 valor<0 ? "#2ecc71"
@@ -169,101 +133,101 @@ grafico.appendChild(barra)
 }
 
 /* ===============================
-CAMARA
+HISTORIAL
+=============================== */
+
+function mostrarHistorial(){
+
+const contenedor = document.getElementById("historialDias")
+if(!contenedor) return
+
+contenedor.innerHTML=""
+
+Object.keys(historial).reverse().forEach(dia=>{
+
+const d = historial[dia]
+
+const div = document.createElement("div")
+
+div.innerHTML = `
+<b>${dia}</b><br>
+🔥 Consumidas: ${d.consumidas}<br>
+🏃 Gastadas: ${d.gastadas}<br>
+⚖️ Balance: ${d.balance}<br>
+<hr>
+`
+
+contenedor.appendChild(div)
+
+})
+
+}
+
+/* ===============================
+CAMARA + IA
 =============================== */
 
 function abrirCamara(){
-
 document.getElementById("cameraInput").click()
-
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
 
 const input = document.getElementById("cameraInput")
 
-if(!input) return
+input.addEventListener("change", async function(e){
 
-input.addEventListener("change", async function(event){
-
-const archivo = event.target.files[0]
-
+const archivo = e.target.files[0]
 if(!archivo) return
 
 const reader = new FileReader()
 
 reader.onload = async function(){
 
-const base64 = reader.result
-
 try{
 
-const respuesta = await fetch(
-"https://calorias-foto.ariel-cozzolino.workers.dev/",
-{
+const res = await fetch("https://calorias-foto.ariel-cozzolino.workers.dev/",{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-image:base64
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({image:reader.result})
 })
-}
-)
 
-const data = await respuesta.json()
+const data = await res.json()
 
 const calorias = data.calorias || 650
-
 const comida = data.comida || "Comida"
 
-const confirmar = confirm(
-
-`📸 ${comida}
-
-🔥 ${calorias} kcal
-
-¿Agregar al día de hoy?`
-
-)
-
-if(confirmar){
+if(confirm(`📸 ${comida}\n🔥 ${calorias} kcal\n¿Agregar?`)){
 
 consumidas += calorias
-
 guardarComida(comida,calorias)
-
 calcularBalance()
 
 }
 
 }catch{
-
-alert("Error analizando la imagen")
-
+alert("Error IA")
 }
 
 }
 
 reader.readAsDataURL(archivo)
 
-event.target.value=""
+e.target.value=""
 
 })
 
 })
 
 /* ===============================
-APPLE HEALTH (GOOGLE SHEET)
+APPLE HEALTH
 =============================== */
 
 async function cargarCaloriasAppleHealth(){
 
 try{
 
-const res = await fetch(
-"https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json"
-)
+const res = await fetch("https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json")
 
 const text = await res.text()
 
@@ -271,34 +235,28 @@ const json = JSON.parse(text.substr(47).slice(0,-2))
 
 const rows = json.table.rows
 
-let caloriasActividad = 0
+let actividad = 0
 
 rows.forEach(r=>{
 
 const fecha = r.c[1]?.v
-const calorias = r.c[3]?.v
+const cal = r.c[3]?.v
 
-if(!fecha || !calorias) return
+if(!fecha || !cal) return
 
-const fechaISO = new Date(fecha).toISOString().split("T")[0]
+const f = new Date(fecha).toISOString().split("T")[0]
 
-if(fechaISO === hoy){
-
-caloriasActividad = calorias
-
+if(f === hoy){
+actividad = cal
 }
 
 })
 
-gastadas = 1800 + caloriasActividad
+gastadas = 1800 + actividad
 
 calcularBalance()
 
-}catch(e){
-
-console.log("No se pudieron leer calorías Apple Health")
-
-}
+}catch{}
 
 }
 
@@ -307,9 +265,8 @@ INICIO
 =============================== */
 
 cargarCaloriasAppleHealth()
-
 calcularBalance()
-
 mostrarRegistro()
-
 dibujarGrafico()
+mostrarHistorial()
+setInterval(cargarCaloriasAppleHealth,300000)
