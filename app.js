@@ -222,7 +222,6 @@ e.target.value=""
 /* ===============================
 APPLE HEALTH
 =============================== */
-
 async function cargarCaloriasAppleHealth(){
 
 try{
@@ -237,6 +236,11 @@ const rows = json.table.rows
 
 let actividad = 0
 
+const hoyObj = new Date()
+const dia = hoyObj.getDate()
+const mes = hoyObj.getMonth() + 1
+const anio = hoyObj.getFullYear()
+
 rows.forEach(r=>{
 
 const fecha = r.c[1]?.v
@@ -244,9 +248,13 @@ const cal = r.c[3]?.v
 
 if(!fecha || !cal) return
 
-const f = new Date(fecha).toISOString().split("T")[0]
+const fechaObj = new Date(fecha)
 
-if(f === hoy){
+const d = fechaObj.getDate()
+const m = fechaObj.getMonth() + 1
+const a = fechaObj.getFullYear()
+
+if(d === dia && m === mes && a === anio){
 actividad = cal
 }
 
@@ -256,7 +264,9 @@ gastadas = 1800 + actividad
 
 calcularBalance()
 
-}catch{}
+}catch(e){
+console.log("Error leyendo Sheet")
+}
 
 }
 
