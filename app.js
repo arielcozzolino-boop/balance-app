@@ -237,25 +237,28 @@ const rows = json.table.rows
 let actividad = 0
 
 const hoyObj = new Date()
-const dia = hoyObj.getDate()
-const mes = hoyObj.getMonth() + 1
-const anio = hoyObj.getFullYear()
+const diaHoy = hoyObj.getDate()
+const mesHoy = hoyObj.getMonth() + 1
+const anioHoy = hoyObj.getFullYear()
 
 rows.forEach(r=>{
 
-const fecha = r.c[1]?.v
+const fechaRaw = r.c[1]?.v
 const cal = r.c[3]?.v
 
-if(!fecha || !cal) return
+if(!fechaRaw || !cal) return
 
-const fechaObj = new Date(fecha)
+// 👉 convierte "18/3/2026 16:30:19"
+const partes = fechaRaw.split(" ")[0].split("/")
 
-const d = fechaObj.getDate()
-const m = fechaObj.getMonth() + 1
-const a = fechaObj.getFullYear()
+const dia = parseInt(partes[0])
+const mes = parseInt(partes[1])
+const anio = parseInt(partes[2])
 
-if(d === dia && m === mes && a === anio){
+if(dia === diaHoy && mes === mesHoy && anio === anioHoy){
+
 actividad = cal
+
 }
 
 })
@@ -265,11 +268,10 @@ gastadas = 1800 + actividad
 calcularBalance()
 
 }catch(e){
-console.log("Error leyendo Sheet")
+console.log("Error leyendo Sheet", e)
 }
 
 }
-
 /* ===============================
 INICIO
 =============================== */
