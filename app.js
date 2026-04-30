@@ -1,284 +1,253 @@
-function showScreen(id){
-document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"))
-document.getElementById(id).classList.add("active")
-}
+const hoy = new Date().toISOString().split('T')[0]
+const dias = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
 
-const hoy = new Date().toISOString().split("T")[0]
-
-const ultimoDia = localStorage.getItem("fecha")
-
-if(ultimoDia !== hoy){
-localStorage.setItem("fecha",hoy)
-localStorage.setItem("consumidas",0)
-}
-
-let consumidas = localStorage.getItem("consumidas")
-? parseInt(localStorage.getItem("consumidas"))
-: 0
-
+let consumidas = parseInt(localStorage.getItem('consumidas') || '0')
 let gastadas = 2200
+let historial = JSON.parse(localStorage.getItem('historial') || '{}')
+let registroComidas = JSON.parse(localStorage.getItem('registroComidas') || '{}')
 
-let historial = localStorage.getItem("historial")
-? JSON.parse(localStorage.getItem("historial"))
-: {}
-
-/* ===============================
-BALANCE
-=============================== */
-
-function calcularBalance(){
-
-const balance = consumidas - gastadas
-
-document.querySelector("#hoy p:nth-child(2)").innerText =
-`🔥 Consumidas: ${consumidas} kcal`
-
-document.querySelector("#hoy p:nth-child(3)").innerText =
-`🏃 Gastadas: ${gastadas} kcal`
-
-document.querySelector("#hoy p:nth-child(4)").innerText =
-`⚖️ Balance: ${balance} kcal`
-
-localStorage.setItem("consumidas",consumidas)
-
-historial[hoy] = {
-consumidas: consumidas,
-gastadas: gastadas,
-balance: balance
+/* --- RESET DIARIO --- */
+if (localStorage.getItem('fecha') !== hoy) {
+  localStorage.setItem('fecha', hoy)
+  localStorage.setItem('consumidas', '0')
+  consumidas = 0
 }
 
-localStorage.setItem("historial",JSON.stringify(historial))
+/* --- FECHA LEGIBLE --- */
+document.getElementById('fecha-hoy').textContent =
+  new Date().toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  })
 
-mostrarRegistro()
-dibujarGrafico()
-mostrarHistorial()
-
+/* ===============================
+   NAVEGACION
+=============================== */
+function go(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById('s-' + id).classList.add('active')
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  if (id === 'progreso') dibujarGrafico()
+  if (id === 'historial') renderHistorial()
 }
 
 /* ===============================
-REGISTRO COMIDAS
+   CALCULAR Y ACTUALIZAR UI
 =============================== */
+function calcular() {
+  const bal = consumidas - gastadas
 
-function guardarComida(comida,calorias){
+  /* anillo */
+  const ringEl = document.getElementById('ring-arc')
+  const pct = Math.min(Math.abs(bal) / 2200, 1)
+  const circ = 427
+  ringEl.style.strokeDashoffset = circ - pct * circ
+  ringEl.style.stroke = bal < 0 ? '#34d399' : bal < 300 ? '#fbbf24' : '#f87171'
 
-let registro = localStorage.getItem("registroComidas")
-? JSON.parse(localStorage.getItem("registroComidas"))
-: {}
+  /* numero central */
+  document.getElementById('ring-num').textContent = (bal > 0 ? '+' : '') + bal
 
-if(!registro[hoy]){
-registro[hoy] = []
-}
+  /* stat cards */
+  document.getElementById('stat-con').innerHTML =
+    consumidas + '<span class="s-unit">kcal</span>'
+  document.getElementById('stat-gas').innerHTML =
+    gastadas + '<span class="s-unit">kcal</span>'
 
-registro[hoy].push({comida,calorias})
+  /* guardar */
+  localStorage.setItem('consumidas', consumidas)
+  historial[hoy] = { consumidas, gastadas, balance: bal }
+  localStorage.setItem('historial', JSON.stringify(historial))
 
-localStorage.setItem("registroComidas",JSON.stringify(registro))
+  renderRegistro()
 }
 
 /* ===============================
-MOSTRAR REGISTRO
+   REGISTRO DEL DIA
 =============================== */
+function renderRegistro() {
+  const list = document.getElementById('registro-list')
+  const items = registroComidas[hoy] || []
 
-function mostrarRegistro(){
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Nada registrado aun</div>'
+    return
+  }
 
-const registro = JSON.parse(localStorage.getItem("registroComidas")) || {}
-
-const comidasHoy = registro[hoy] || []
-
-const contenedor = document.getElementById("registro")
-
-if(!contenedor) return
-
-contenedor.innerHTML=""
-
-comidasHoy.forEach(item=>{
-const div = document.createElement("div")
-div.innerText = `${item.comida} — ${item.calorias} kcal`
-contenedor.appendChild(div)
-})
-
+  list.innerHTML = items.map(i => `
+    <div class="registro-item">
+      <span class="r-name">${i.comida}</span>
+      <span class="r-cal">${i.calorias} kcal</span>
+    </div>
+  `).join('')
 }
 
 /* ===============================
-GRAFICO
+   AGREGAR MANUAL
 =============================== */
+function agregarManual() {
+  const n = document.getElementById('inp-comida').value.trim()
+  const c = parseInt(document.getElementById('inp-cal').value)
+  if (!n || isNaN(c)) return
 
-function dibujarGrafico(){
+  consumidas += c
+  if (!registroComidas[hoy]) registroComidas[hoy] = []
+  registroComidas[hoy].push({ comida: n, calorias: c })
+  localStorage.setItem('registroComidas', JSON.stringify(registroComidas))
 
-const grafico = document.getElementById("grafico")
-if(!grafico) return
+  document.getElementById('inp-comida').value = ''
+  document.getElementById('inp-cal').value = ''
 
-grafico.innerHTML=""
-
-let dias = Object.keys(historial).slice(-7)
-
-dias.forEach(dia=>{
-
-const valor = historial[dia]?.balance || 0
-
-const barra = document.createElement("div")
-
-barra.style.height = Math.min(Math.abs(valor)/5,180)+"px"
-
-barra.style.background =
-valor<0 ? "#2ecc71"
-: valor<200 ? "#f1c40f"
-: "#e74c3c"
-
-barra.innerText = valor
-
-grafico.appendChild(barra)
-
-})
-
+  calcular()
+  go('hoy', document.querySelectorAll('.nav-btn')[0])
 }
 
 /* ===============================
-HISTORIAL
+   CAMARA + IA
 =============================== */
+document.getElementById('camInput').addEventListener('change', async function (e) {
+  const archivo = e.target.files[0]
+  if (!archivo) return
 
-function mostrarHistorial(){
+  const reader = new FileReader()
+  reader.onload = async function () {
+    try {
+      const res = await fetch('https://calorias-foto.ariel-cozzolino.workers.dev/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: reader.result })
+      })
 
-const contenedor = document.getElementById("historialDias")
-if(!contenedor) return
+      const data = await res.json()
+      const calorias = data.calorias || 650
+      const comida = data.comida || 'Comida'
 
-contenedor.innerHTML=""
-
-Object.keys(historial).reverse().forEach(dia=>{
-
-const d = historial[dia]
-
-const div = document.createElement("div")
-
-div.innerHTML = `
-<b>${dia}</b><br>
-🔥 Consumidas: ${d.consumidas}<br>
-🏃 Gastadas: ${d.gastadas}<br>
-⚖️ Balance: ${d.balance}<br>
-<hr>
-`
-
-contenedor.appendChild(div)
-
-})
-
-}
-
-/* ===============================
-CAMARA + IA
-=============================== */
-
-function abrirCamara(){
-document.getElementById("cameraInput").click()
-}
-
-document.addEventListener("DOMContentLoaded",()=>{
-
-const input = document.getElementById("cameraInput")
-
-input.addEventListener("change", async function(e){
-
-const archivo = e.target.files[0]
-if(!archivo) return
-
-const reader = new FileReader()
-
-reader.onload = async function(){
-
-try{
-
-const res = await fetch("https://calorias-foto.ariel-cozzolino.workers.dev/",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({image:reader.result})
-})
-
-const data = await res.json()
-
-const calorias = data.calorias || 650
-const comida = data.comida || "Comida"
-
-if(confirm(`📸 ${comida}\n🔥 ${calorias} kcal\n¿Agregar?`)){
-
-consumidas += calorias
-guardarComida(comida,calorias)
-calcularBalance()
-
-}
-
-}catch{
-alert("Error IA")
-}
-
-}
-
-reader.readAsDataURL(archivo)
-
-e.target.value=""
-
-})
-
+      if (confirm(`${comida}\n${calorias} kcal\n¿Agregar?`)) {
+        consumidas += calorias
+        if (!registroComidas[hoy]) registroComidas[hoy] = []
+        registroComidas[hoy].push({ comida, calorias })
+        localStorage.setItem('registroComidas', JSON.stringify(registroComidas))
+        calcular()
+      }
+    } catch {
+      alert('Error IA')
+    }
+    e.target.value = ''
+  }
+  reader.readAsDataURL(archivo)
 })
 
 /* ===============================
-APPLE HEALTH
+   APPLE HEALTH
 =============================== */
-async function cargarCaloriasAppleHealth(){
+async function cargarCaloriasAppleHealth() {
+  try {
+    const res = await fetch(
+      'https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json'
+    )
+    const text = await res.text()
+    const json = JSON.parse(text.substr(47).slice(0, -2))
+    const rows = json.table.rows
 
-try{
+    const hoyObj = new Date()
+    const diaHoy = hoyObj.getDate()
+    const mesHoy = hoyObj.getMonth() + 1
+    const anioHoy = hoyObj.getFullYear()
 
-const res = await fetch("https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json")
+    let actividad = 0
+    rows.forEach(r => {
+      const fechaRaw = r.c[1]?.v
+      const cal = r.c[3]?.v
+      if (!fechaRaw || !cal) return
+      const partes = fechaRaw.split(' ')[0].split('/')
+      if (
+        parseInt(partes[0]) === diaHoy &&
+        parseInt(partes[1]) === mesHoy &&
+        parseInt(partes[2]) === anioHoy
+      ) {
+        actividad = cal
+      }
+    })
 
-const text = await res.text()
-
-const json = JSON.parse(text.substr(47).slice(0,-2))
-
-const rows = json.table.rows
-
-let actividad = 0
-
-const hoyObj = new Date()
-const diaHoy = hoyObj.getDate()
-const mesHoy = hoyObj.getMonth() + 1
-const anioHoy = hoyObj.getFullYear()
-
-rows.forEach(r=>{
-
-const fechaRaw = r.c[1]?.v
-const cal = r.c[3]?.v
-
-if(!fechaRaw || !cal) return
-
-// 👉 convierte "18/3/2026 16:30:19"
-const partes = fechaRaw.split(" ")[0].split("/")
-
-const dia = parseInt(partes[0])
-const mes = parseInt(partes[1])
-const anio = parseInt(partes[2])
-
-if(dia === diaHoy && mes === mesHoy && anio === anioHoy){
-
-actividad = cal
-
+    gastadas = 1800 + actividad
+    calcular()
+  } catch (e) {
+    console.log('Error leyendo Sheet', e)
+  }
 }
 
-})
-
-gastadas = 1800 + actividad
-
-calcularBalance()
-
-}catch(e){
-console.log("Error leyendo Sheet", e)
-}
-
-}
 /* ===============================
-INICIO
+   GRAFICO
 =============================== */
+function dibujarGrafico() {
+  const bars = document.getElementById('chart-bars')
+  const keys = Object.keys(historial).slice(-7)
 
+  if (!keys.length) {
+    bars.innerHTML = '<div class="empty-state" style="width:100%;text-align:center;">Sin datos aun</div>'
+    return
+  }
+
+  const maxVal = Math.max(...keys.map(k => Math.abs(historial[k]?.balance || 0)), 1)
+
+  bars.innerHTML = keys.map(k => {
+    const d = historial[k]
+    const b = d?.balance || 0
+    const h = Math.max((Math.abs(b) / maxVal) * 100, 4)
+    const col = b < 0 ? '#34d399' : b < 300 ? '#fbbf24' : '#f87171'
+    const dayName = dias[new Date(k + 'T12:00:00').getDay()]
+    return `
+      <div class="bar-col">
+        <div class="b-label">${b > 0 ? '+' : ''}${b}</div>
+        <div class="b" style="height:${h}px;background:${col};"></div>
+        <div class="b-day">${dayName}</div>
+      </div>
+    `
+  }).join('')
+}
+
+/* ===============================
+   HISTORIAL
+=============================== */
+function renderHistorial() {
+  const list = document.getElementById('hist-list')
+  const keys = Object.keys(historial).reverse()
+
+  if (!keys.length) {
+    list.innerHTML = '<div class="empty-state">Sin historial</div>'
+    return
+  }
+
+  list.innerHTML = keys.map(k => {
+    const d = historial[k]
+    const col = d.balance < 0 ? '#34d399' : d.balance < 300 ? '#fbbf24' : '#f87171'
+    const fecha = new Date(k + 'T12:00:00').toLocaleDateString('es-AR', {
+      weekday: 'long', day: 'numeric', month: 'long'
+    })
+    return `
+      <div class="hist-item">
+        <div class="hist-date">${fecha}</div>
+        <div class="hist-row">
+          <span class="h-k">Consumidas</span>
+          <span class="h-v">${d.consumidas} kcal</span>
+        </div>
+        <div class="hist-row">
+          <span class="h-k">Gastadas</span>
+          <span class="h-v">${d.gastadas} kcal</span>
+        </div>
+        <div class="hist-row">
+          <span class="h-k">Balance</span>
+          <span class="h-v" style="color:${col}">${d.balance > 0 ? '+' : ''}${d.balance} kcal</span>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+/* ===============================
+   INICIO
+=============================== */
 cargarCaloriasAppleHealth()
-calcularBalance()
-mostrarRegistro()
-dibujarGrafico()
-mostrarHistorial()
-setInterval(cargarCaloriasAppleHealth,300000)
+calcular()
+setInterval(cargarCaloriasAppleHealth, 300000)
