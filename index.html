@@ -1,66 +1,127 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Balance</title>
-
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-<nav>
-<button onclick="showScreen('hoy')">Hoy</button>
-<button onclick="showScreen('comer')">Comer</button>
-<button onclick="showScreen('progreso')">Progreso</button>
-<button onclick="showScreen('historial')">Historial</button>
-</nav>
+<div class="app">
+  <div class="screens">
 
-<main>
+    <!-- HOY -->
+    <div class="screen active" id="s-hoy">
+      <div class="screen-header">
+        <h1>Balance</h1>
+        <h2 id="fecha-hoy">Hoy</h2>
+      </div>
 
-<!-- HOY -->
-<section id="hoy" class="screen active">
+      <div class="balance-ring">
+        <div class="ring-wrap">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="68" fill="none" stroke="#1e1e1e" stroke-width="10"/>
+            <circle id="ring-arc" cx="80" cy="80" r="68" fill="none" stroke="#34d399" stroke-width="10" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-val" id="ring-num">0</div>
+            <div class="ring-label">balance kcal</div>
+          </div>
+        </div>
+      </div>
 
-<h2>Hoy</h2>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="s-label">Consumidas</div>
+          <div class="s-val red" id="stat-con">0<span class="s-unit">kcal</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Gastadas</div>
+          <div class="s-val green" id="stat-gas">2200<span class="s-unit">kcal</span></div>
+        </div>
+      </div>
 
-<p>🔥 Consumidas: 0 kcal</p>
-<p>🏃 Gastadas: 2200 kcal</p>
-<p>⚖️ Balance: 0 kcal</p>
+      <button class="foto-btn" onclick="document.getElementById('camInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Registrar con foto
+      </button>
+      <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none"/>
 
-<button onclick="abrirCamara()">📷 Sacar foto</button>
+      <div class="section-title">Registro del día</div>
+      <div class="registro-list" id="registro-list">
+        <div class="empty-state">Nada registrado aún</div>
+      </div>
+    </div>
 
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
+    <!-- COMER -->
+    <div class="screen" id="s-comer">
+      <div class="screen-header">
+        <h1>Agregar</h1>
+        <h2>¿Qué comiste?</h2>
+      </div>
+      <button class="foto-btn" style="margin-top:8px" onclick="document.getElementById('camInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Sacar foto
+      </button>
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">o ingresar manual</span>
+        <div class="divider-line"></div>
+      </div>
+      <div class="form-group">
+        <input id="inp-comida" type="text" placeholder="Nombre del alimento" class="inp"/>
+        <input id="inp-cal" type="number" placeholder="Calorías (kcal)" class="inp"/>
+        <button class="btn-primary" onclick="agregarManual()">Agregar</button>
+      </div>
+    </div>
 
-<h3>Registro</h3>
-<div id="registro"></div>
+    <!-- PROGRESO -->
+    <div class="screen" id="s-progreso">
+      <div class="screen-header">
+        <h1>Semana</h1>
+        <h2>Progreso</h2>
+      </div>
+      <div class="chart-wrap">
+        <div class="section-title" style="margin-bottom:16px;">Últimos 7 días</div>
+        <div class="chart-bars" id="chart-bars"></div>
+      </div>
+    </div>
 
-</section>
+    <!-- HISTORIAL -->
+    <div class="screen" id="s-historial">
+      <div class="screen-header">
+        <h1>Registro</h1>
+        <h2>Historial</h2>
+      </div>
+      <div class="hist-list" id="hist-list"></div>
+    </div>
 
-<!-- COMER -->
-<section id="comer" class="screen">
-<h2>Agregar comida</h2>
-<button onclick="abrirCamara()">📷 Sacar foto</button>
-</section>
+  </div>
 
-<!-- PROGRESO -->
-<section id="progreso" class="screen">
-<h2>Progreso</h2>
-<div id="grafico"></div>
-</section>
-
-<!-- HISTORIAL -->
-<section id="historial" class="screen">
-<h2>Historial</h2>
-<div id="historialDias"></div>
-</section>
-
-</main>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="go('hoy',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Hoy
+    </button>
+    <button class="nav-btn" onclick="go('comer',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg>
+      Comer
+    </button>
+    <button class="nav-btn" onclick="go('progreso',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progreso
+    </button>
+    <button class="nav-btn" onclick="go('historial',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Historial
+    </button>
+  </nav>
+</div>
 
 <script src="app.js"></script>
-
 </body>
 </html>
