@@ -2,51 +2,49 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Balance</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-
 <div class="app">
   <div class="screens">
 
-    <!-- HOY -->
+    <!-- ── HOY ── -->
     <div class="screen active" id="s-hoy">
       <div class="screen-header">
-        <h1>Balance</h1>
+        <div class="eyebrow">Balance</div>
         <h2 id="fecha-hoy">Hoy</h2>
       </div>
 
-      <div class="balance-ring">
-        <div class="ring-wrap">
-          <svg width="160" height="160" viewBox="0 0 160 160">
-            <circle cx="80" cy="80" r="68" fill="none" stroke="#1e1e1e" stroke-width="10"/>
-            <circle id="ring-arc" cx="80" cy="80" r="68" fill="none" stroke="#34d399" stroke-width="10" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"/>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-val" id="ring-num">0</div>
-            <div class="ring-label">balance kcal</div>
-          </div>
+      <div class="ring-wrap">
+        <svg width="210" height="210" viewBox="0 0 210 210">
+          <circle class="ring-track" cx="105" cy="105" r="95" fill="none" stroke-width="10"/>
+          <circle class="ring-arc" id="ring-arc" cx="105" cy="105" r="95" fill="none" stroke-width="10"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-val" id="ring-val">0</div>
+          <div class="ring-unit">kcal</div>
+          <div class="ring-status" id="ring-status">—</div>
         </div>
       </div>
 
       <div class="stats-row">
         <div class="stat-card">
+          <span class="s-icon">🔥</span>
           <div class="s-label">Consumidas</div>
           <div class="s-val red" id="stat-con">0<span class="s-unit">kcal</span></div>
         </div>
         <div class="stat-card">
+          <span class="s-icon">⚡</span>
           <div class="s-label">Gastadas</div>
           <div class="s-val green" id="stat-gas">2200<span class="s-unit">kcal</span></div>
         </div>
       </div>
 
       <button class="foto-btn" onclick="document.getElementById('camInput').click()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Registrar con foto
       </button>
       <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none"/>
@@ -57,44 +55,90 @@
       </div>
     </div>
 
-    <!-- COMER -->
+    <!-- ── COMER ── -->
     <div class="screen" id="s-comer">
       <div class="screen-header">
-        <h1>Agregar</h1>
+        <div class="eyebrow">Agregar</div>
         <h2>¿Qué comiste?</h2>
       </div>
-      <button class="foto-btn" style="margin-top:8px" onclick="document.getElementById('camInput').click()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Sacar foto
+
+      <button class="foto-btn-ghost" onclick="document.getElementById('camInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Sacar foto con IA
       </button>
+
       <div class="divider">
         <div class="divider-line"></div>
-        <span class="divider-text">o ingresar manual</span>
+        <span class="divider-text">o manual</span>
         <div class="divider-line"></div>
       </div>
+
       <div class="form-group">
-        <input id="inp-comida" type="text" placeholder="Nombre del alimento" class="inp"/>
-        <input id="inp-cal" type="number" placeholder="Calorías (kcal)" class="inp"/>
-        <button class="btn-primary" onclick="agregarManual()">Agregar</button>
+        <div class="inp-wrap" id="wrap-comida">
+          <label class="inp-label">Alimento</label>
+          <input class="inp" id="inp-comida" type="text" autocomplete="off"
+            oninput="toggleFilled('wrap-comida',this)"/>
+        </div>
+        <div class="inp-wrap" id="wrap-cal">
+          <label class="inp-label">Calorías (kcal)</label>
+          <input class="inp" id="inp-cal" type="number" inputmode="numeric"
+            oninput="toggleFilled('wrap-cal',this)"/>
+        </div>
+        <button class="btn-add" onclick="agregarManual()">Agregar comida</button>
+      </div>
+
+      <!-- EJERCICIO -->
+      <div class="ejercicio-section">
+        <div class="divider" style="margin-top:28px">
+          <div class="divider-line"></div>
+          <span class="divider-text">ejercicio</span>
+          <div class="divider-line"></div>
+        </div>
+        <div class="ejercicio-hint">
+          Abrí Salud o Apple Watch, fijate las calorías activas e ingresalas acá
+        </div>
+        <div class="form-group">
+          <div class="inp-wrap" id="wrap-actividad">
+            <label class="inp-label">Actividad (ej: Correr, Gym)</label>
+            <input class="inp" id="inp-actividad" type="text" autocomplete="off"
+              oninput="toggleFilled('wrap-actividad',this)"/>
+          </div>
+          <div class="inp-wrap" id="wrap-kcal-ej">
+            <label class="inp-label">Calorías quemadas (kcal)</label>
+            <input class="inp" id="inp-kcal-ejercicio" type="number" inputmode="numeric"
+              oninput="toggleFilled('wrap-kcal-ej',this)"/>
+          </div>
+          <button class="btn-add btn-ejercicio" onclick="agregarEjercicio()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Registrar ejercicio
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- PROGRESO -->
+    <!-- ── PROGRESO ── -->
     <div class="screen" id="s-progreso">
       <div class="screen-header">
-        <h1>Semana</h1>
+        <div class="eyebrow">Semana</div>
         <h2>Progreso</h2>
       </div>
       <div class="chart-wrap">
-        <div class="section-title" style="margin-bottom:16px;">Últimos 7 días</div>
+        <div class="chart-header">
+          <span class="chart-title">Últimos 7 días</span>
+          <div class="chart-legend">
+            <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Déficit</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#f87171"></div>Superávit</div>
+          </div>
+        </div>
         <div class="chart-bars" id="chart-bars"></div>
       </div>
+      <div class="prog-stats" id="prog-stats"></div>
     </div>
 
-    <!-- HISTORIAL -->
+    <!-- ── HISTORIAL ── -->
     <div class="screen" id="s-historial">
       <div class="screen-header">
-        <h1>Registro</h1>
+        <div class="eyebrow">Registro</div>
         <h2>Historial</h2>
       </div>
       <div class="hist-list" id="hist-list"></div>
@@ -102,9 +146,10 @@
 
   </div>
 
+  <!-- ── NAV ── -->
   <nav class="nav">
     <button class="nav-btn active" onclick="go('hoy',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Hoy
     </button>
     <button class="nav-btn" onclick="go('comer',this)">
@@ -116,12 +161,13 @@
       Progreso
     </button>
     <button class="nav-btn" onclick="go('historial',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Historial
     </button>
   </nav>
 </div>
 
+<div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
 </html>
