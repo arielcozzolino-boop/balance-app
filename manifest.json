@@ -1,8 +1,9 @@
 {
   "name": "Balance",
   "short_name": "Balance",
-  "start_url": ".",
+  "start_url": "/balance-app/",
+  "scope": "/balance-app/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a"
+  "background_color": "#080808",
+  "theme_color": "#080808"
 }
