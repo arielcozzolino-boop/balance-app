@@ -1,61 +1,122 @@
-const hoy = new Date().toISOString().split('T')[0]
-const dias = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
+/* ══════════════════════════════════════
+   BALANCE — app.js v3
+   con sync a Google Sheets + Ejercicio
+══════════════════════════════════════ */
 
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIcoU9vkng41n7wekGUItDsFDgehtYAHSX8oWPmtR_yPszRYoSfuh4sq8T2xrcfQ6-bQ/exec'
+
+const hoy  = new Date().toISOString().split('T')[0]
+const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
+
+/* ── estado ── */
 let consumidas = parseInt(localStorage.getItem('consumidas') || '0')
-let gastadas = 2200
-let historial = JSON.parse(localStorage.getItem('historial') || '{}')
-let registroComidas = JSON.parse(localStorage.getItem('registroComidas') || '{}')
+let gastadas   = 2200
+let ejercicio  = parseInt(localStorage.getItem('ejercicio')  || '0')
+let historial  = JSON.parse(localStorage.getItem('historial')       || '{}')
+let registro   = JSON.parse(localStorage.getItem('registroComidas') || '{}')
+let regEjercicio = JSON.parse(localStorage.getItem('registroEjercicio') || '{}')
 
-/* --- RESET DIARIO --- */
+/* reset diario */
 if (localStorage.getItem('fecha') !== hoy) {
   localStorage.setItem('fecha', hoy)
   localStorage.setItem('consumidas', '0')
+  localStorage.setItem('ejercicio',  '0')
   consumidas = 0
+  ejercicio  = 0
 }
 
-/* --- FECHA LEGIBLE --- */
+/* fecha legible */
 document.getElementById('fecha-hoy').textContent =
   new Date().toLocaleDateString('es-AR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
+    weekday: 'long', day: 'numeric', month: 'long'
   })
 
-/* ===============================
+/* ══════════════════════════════════════
+   SYNC A GOOGLE SHEETS
+══════════════════════════════════════ */
+async function syncSheet(payload) {
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  } catch(e) {
+    console.log('Sync error', e)
+  }
+}
+
+function horaActual() {
+  return new Date().toLocaleTimeString('es-AR', {
+    hour: '2-digit', minute: '2-digit', hour12: false
+  })
+}
+
+function getTurno(hora) {
+  const h = parseInt(hora.split(':')[0])
+  if (h >= 6  && h < 11) return 'Desayuno'
+  if (h >= 11 && h < 15) return 'Almuerzo'
+  if (h >= 15 && h < 19) return 'Merienda'
+  if (h >= 19)           return 'Cena'
+  return 'Extra'
+}
+
+/* ══════════════════════════════════════
    NAVEGACION
-=============================== */
+══════════════════════════════════════ */
 function go(id, btn) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById('s-' + id).classList.add('active')
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
   btn.classList.add('active')
-  if (id === 'progreso') dibujarGrafico()
+  if (id === 'progreso')  dibujarGrafico()
   if (id === 'historial') renderHistorial()
 }
 
-/* ===============================
-   CALCULAR Y ACTUALIZAR UI
-=============================== */
+/* ══════════════════════════════════════
+   CALCULAR + UI
+══════════════════════════════════════ */
 function calcular() {
   const bal = consumidas - gastadas
 
-  /* anillo */
-  const ringEl = document.getElementById('ring-arc')
+  const arc    = document.getElementById('ring-arc')
+  const valEl  = document.getElementById('ring-val')
+  const statEl = document.getElementById('ring-status')
+  const circ   = 2 * Math.PI * 95
+
   const pct = Math.min(Math.abs(bal) / 2200, 1)
-  const circ = 427
-  ringEl.style.strokeDashoffset = circ - pct * circ
-  ringEl.style.stroke = bal < 0 ? '#34d399' : bal < 300 ? '#fbbf24' : '#f87171'
+  arc.style.strokeDashoffset = circ - pct * circ
 
-  /* numero central */
-  document.getElementById('ring-num').textContent = (bal > 0 ? '+' : '') + bal
+  let color, statusTxt
+  if (bal < 0)        { color = '#4ade80'; statusTxt = 'deficit'   }
+  else if (bal < 300) { color = '#facc15'; statusTxt = 'limite'    }
+  else                { color = '#f87171'; statusTxt = 'superavit' }
 
-  /* stat cards */
+  arc.style.stroke   = color
+  valEl.style.color  = color
+  statEl.style.color = color
+  valEl.textContent  = (bal > 0 ? '+' : '') + bal
+  statEl.textContent = statusTxt
+
+  arc.closest('svg').style.filter =
+    `drop-shadow(0 0 18px ${color === '#4ade80'
+      ? 'rgba(74,222,128,0.2)'
+      : color === '#facc15'
+        ? 'rgba(250,204,21,0.2)'
+        : 'rgba(248,113,113,0.2)'})`
+
   document.getElementById('stat-con').innerHTML =
     consumidas + '<span class="s-unit">kcal</span>'
   document.getElementById('stat-gas').innerHTML =
     gastadas + '<span class="s-unit">kcal</span>'
 
-  /* guardar */
+  // mostrar ejercicio en card si hay
+  const ejercEl = document.getElementById('stat-ejercicio')
+  if (ejercEl) {
+    ejercEl.innerHTML = ejercicio + '<span class="s-unit">kcal</span>'
+  }
+
   localStorage.setItem('consumidas', consumidas)
   historial[hoy] = { consumidas, gastadas, balance: bal }
   localStorage.setItem('historial', JSON.stringify(historial))
@@ -63,52 +124,139 @@ function calcular() {
   renderRegistro()
 }
 
-/* ===============================
+/* ══════════════════════════════════════
    REGISTRO DEL DIA
-=============================== */
+══════════════════════════════════════ */
 function renderRegistro() {
-  const list = document.getElementById('registro-list')
-  const items = registroComidas[hoy] || []
+  const list  = document.getElementById('registro-list')
+  const items = registro[hoy] || []
 
   if (!items.length) {
-    list.innerHTML = '<div class="empty-state">Nada registrado aun</div>'
+    list.innerHTML = '<div class="empty-state">Nada registrado aún</div>'
     return
   }
 
-  list.innerHTML = items.map(i => `
-    <div class="registro-item">
-      <span class="r-name">${i.comida}</span>
-      <span class="r-cal">${i.calorias} kcal</span>
-    </div>
-  `).join('')
+  // agrupar por turno
+  const turnos = ['Desayuno','Almuerzo','Merienda','Cena','Extra']
+  const grupos = {}
+  turnos.forEach(t => { grupos[t] = [] })
+  items.forEach(item => {
+    const t = item.turno || getTurno(item.hora || '12:00')
+    if (!grupos[t]) grupos[t] = []
+    grupos[t].push(item)
+  })
+
+  const TURNO_EMOJI = {
+    Desayuno: '🌅', Almuerzo: '☀️', Merienda: '🍎', Cena: '🌙', Extra: '⭐'
+  }
+
+  let html = ''
+  turnos.forEach(turno => {
+    if (!grupos[turno].length) return
+    html += `<div class="turno-label">${TURNO_EMOJI[turno]} ${turno}</div>`
+    grupos[turno].forEach((item, i) => {
+      html += `
+        <div class="registro-item" style="animation-delay:${i * 0.05}s">
+          <span class="r-name">${item.comida}</span>
+          <span class="r-cal">${item.calorias} kcal</span>
+        </div>`
+    })
+  })
+
+  list.innerHTML = html
 }
 
-/* ===============================
-   AGREGAR MANUAL
-=============================== */
-function agregarManual() {
+/* ══════════════════════════════════════
+   AGREGAR COMIDA MANUAL
+══════════════════════════════════════ */
+function toggleFilled(wrapId, input) {
+  document.getElementById(wrapId).classList.toggle('filled', input.value.trim() !== '')
+}
+
+async function agregarManual() {
   const n = document.getElementById('inp-comida').value.trim()
   const c = parseInt(document.getElementById('inp-cal').value)
-  if (!n || isNaN(c)) return
+  if (!n || isNaN(c) || c <= 0) { toast('Completa los campos'); return }
+
+  const hora  = horaActual()
+  const turno = getTurno(hora)
 
   consumidas += c
-  if (!registroComidas[hoy]) registroComidas[hoy] = []
-  registroComidas[hoy].push({ comida: n, calorias: c })
-  localStorage.setItem('registroComidas', JSON.stringify(registroComidas))
+  if (!registro[hoy]) registro[hoy] = []
+  registro[hoy].push({ comida: n, calorias: c, hora, turno })
+  localStorage.setItem('registroComidas', JSON.stringify(registro))
 
   document.getElementById('inp-comida').value = ''
-  document.getElementById('inp-cal').value = ''
+  document.getElementById('inp-cal').value    = ''
+  document.getElementById('wrap-comida').classList.remove('filled')
+  document.getElementById('wrap-cal').classList.remove('filled')
 
   calcular()
+
+  // sync sheet
+  syncSheet({
+    type: 'comida',
+    fecha: hoy,
+    comida: n,
+    calorias: c,
+    hora,
+    turno,
+    consumidasTotal: consumidas,
+    gastadasTotal:   gastadas,
+    balance:         consumidas - gastadas
+  })
+
+  toast(`${turno} · ${n} — ${c} kcal`)
   go('hoy', document.querySelectorAll('.nav-btn')[0])
 }
 
-/* ===============================
+/* ══════════════════════════════════════
+   AGREGAR EJERCICIO
+══════════════════════════════════════ */
+async function agregarEjercicio() {
+  const act  = document.getElementById('inp-actividad').value.trim()
+  const kcal = parseInt(document.getElementById('inp-kcal-ejercicio').value)
+  if (!act || isNaN(kcal) || kcal <= 0) { toast('Completa los campos'); return }
+
+  const hora = horaActual()
+
+  ejercicio += kcal
+  gastadas  += kcal
+  localStorage.setItem('ejercicio', ejercicio)
+
+  if (!regEjercicio[hoy]) regEjercicio[hoy] = []
+  regEjercicio[hoy].push({ actividad: act, calorias: kcal, hora })
+  localStorage.setItem('registroEjercicio', JSON.stringify(regEjercicio))
+
+  document.getElementById('inp-actividad').value       = ''
+  document.getElementById('inp-kcal-ejercicio').value  = ''
+  document.getElementById('wrap-actividad').classList.remove('filled')
+  document.getElementById('wrap-kcal-ej').classList.remove('filled')
+
+  calcular()
+
+  // sync sheet
+  syncSheet({
+    type: 'ejercicio',
+    fecha: hoy,
+    actividad: act,
+    hora,
+    calorias: kcal,
+    notas: 'Ingreso manual desde app'
+  })
+
+  toast(`${act} — ${kcal} kcal quemadas`)
+  go('hoy', document.querySelectorAll('.nav-btn')[0])
+}
+
+/* ══════════════════════════════════════
    CAMARA + IA
-=============================== */
+══════════════════════════════════════ */
 document.getElementById('camInput').addEventListener('change', async function (e) {
   const archivo = e.target.files[0]
   if (!archivo) return
+
+  toast('Analizando imagen...')
 
   const reader = new FileReader()
   reader.onload = async function () {
@@ -118,115 +266,173 @@ document.getElementById('camInput').addEventListener('change', async function (e
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: reader.result })
       })
-
-      const data = await res.json()
+      const data    = await res.json()
       const calorias = data.calorias || 650
-      const comida = data.comida || 'Comida'
+      const comida   = data.comida   || 'Comida'
+      const hora     = horaActual()
+      const turno    = getTurno(hora)
 
       if (confirm(`${comida}\n${calorias} kcal\n¿Agregar?`)) {
         consumidas += calorias
-        if (!registroComidas[hoy]) registroComidas[hoy] = []
-        registroComidas[hoy].push({ comida, calorias })
-        localStorage.setItem('registroComidas', JSON.stringify(registroComidas))
+        if (!registro[hoy]) registro[hoy] = []
+        registro[hoy].push({ comida, calorias, hora, turno })
+        localStorage.setItem('registroComidas', JSON.stringify(registro))
+
         calcular()
+
+        syncSheet({
+          type: 'comida',
+          fecha: hoy,
+          comida,
+          calorias,
+          hora,
+          turno,
+          consumidasTotal: consumidas,
+          gastadasTotal:   gastadas,
+          balance:         consumidas - gastadas
+        })
+
+        toast(`${turno} · ${comida} — ${calorias} kcal`)
       }
     } catch {
-      alert('Error IA')
+      toast('Error al analizar la imagen')
     }
     e.target.value = ''
   }
   reader.readAsDataURL(archivo)
 })
 
-/* ===============================
+/* ══════════════════════════════════════
    APPLE HEALTH
-=============================== */
-async function cargarCaloriasAppleHealth() {
+══════════════════════════════════════ */
+async function cargarAppleHealth() {
   try {
-    const res = await fetch(
+    const res  = await fetch(
       'https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json'
     )
     const text = await res.text()
     const json = JSON.parse(text.substr(47).slice(0, -2))
     const rows = json.table.rows
 
-    const hoyObj = new Date()
-    const diaHoy = hoyObj.getDate()
-    const mesHoy = hoyObj.getMonth() + 1
-    const anioHoy = hoyObj.getFullYear()
-
+    const now   = new Date()
+    const diaH  = now.getDate()
+    const mesH  = now.getMonth() + 1
+    const anioH = now.getFullYear()
     let actividad = 0
+
     rows.forEach(r => {
       const fechaRaw = r.c[1]?.v
-      const cal = r.c[3]?.v
+      const cal      = r.c[3]?.v
       if (!fechaRaw || !cal) return
-      const partes = fechaRaw.split(' ')[0].split('/')
-      if (
-        parseInt(partes[0]) === diaHoy &&
-        parseInt(partes[1]) === mesHoy &&
-        parseInt(partes[2]) === anioHoy
-      ) {
+      const p = fechaRaw.split(' ')[0].split('/')
+      if (parseInt(p[0]) === diaH && parseInt(p[1]) === mesH && parseInt(p[2]) === anioH) {
         actividad = cal
       }
     })
 
-    gastadas = 1800 + actividad
+    // base 1800 + actividad Apple Health + ejercicio manual
+    gastadas = 1800 + actividad + ejercicio
     calcular()
   } catch (e) {
-    console.log('Error leyendo Sheet', e)
+    console.log('Error Apple Health', e)
   }
 }
 
-/* ===============================
+/* ══════════════════════════════════════
    GRAFICO
-=============================== */
+══════════════════════════════════════ */
 function dibujarGrafico() {
-  const bars = document.getElementById('chart-bars')
-  const keys = Object.keys(historial).slice(-7)
+  const bars  = document.getElementById('chart-bars')
+  const stats = document.getElementById('prog-stats')
+  const keys  = Object.keys(historial).slice(-7)
 
   if (!keys.length) {
-    bars.innerHTML = '<div class="empty-state" style="width:100%;text-align:center;">Sin datos aun</div>'
+    bars.innerHTML  = '<div class="empty-state" style="width:100%;text-align:center">Sin datos aún</div>'
+    stats.innerHTML = ''
     return
   }
 
-  const maxVal = Math.max(...keys.map(k => Math.abs(historial[k]?.balance || 0)), 1)
+  const valores  = keys.map(k => historial[k]?.balance || 0)
+  const maxVal   = Math.max(...valores.map(Math.abs), 1)
+  const promedio = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length)
+  const minVal   = Math.min(...valores)
+  const mejorDia = keys[valores.indexOf(minVal)]
 
-  bars.innerHTML = keys.map(k => {
-    const d = historial[k]
-    const b = d?.balance || 0
-    const h = Math.max((Math.abs(b) / maxVal) * 100, 4)
-    const col = b < 0 ? '#34d399' : b < 300 ? '#fbbf24' : '#f87171'
-    const dayName = dias[new Date(k + 'T12:00:00').getDay()]
+  bars.innerHTML = keys.map((k, i) => {
+    const b    = historial[k]?.balance || 0
+    const h    = Math.max((Math.abs(b) / maxVal) * 110, 3)
+    const col  = b < 0 ? '#4ade80' : b < 300 ? '#facc15' : '#f87171'
+    const dayN = DIAS[new Date(k + 'T12:00:00').getDay()]
     return `
       <div class="bar-col">
-        <div class="b-label">${b > 0 ? '+' : ''}${b}</div>
-        <div class="b" style="height:${h}px;background:${col};"></div>
-        <div class="b-day">${dayName}</div>
-      </div>
-    `
+        <div class="b-val">${b > 0 ? '+' : ''}${b}</div>
+        <div class="b" style="height:${h}px;background:${col};animation-delay:${i*0.07}s"></div>
+        <div class="b-day">${dayN}</div>
+      </div>`
   }).join('')
+
+  const mejorFecha = mejorDia
+    ? new Date(mejorDia + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
+    : '—'
+
+  stats.innerHTML = `
+    <div class="prog-stat">
+      <div class="ps-label">Promedio</div>
+      <div class="ps-val" style="color:${promedio<0?'#4ade80':promedio<300?'#facc15':'#f87171'}">${promedio>0?'+':''}${promedio}</div>
+    </div>
+    <div class="prog-stat">
+      <div class="ps-label">Mejor día</div>
+      <div class="ps-val" style="color:#4ade80;font-size:11px">${mejorFecha}</div>
+    </div>
+    <div class="prog-stat">
+      <div class="ps-label">Días reg.</div>
+      <div class="ps-val">${keys.length}</div>
+    </div>`
 }
 
-/* ===============================
+/* ══════════════════════════════════════
    HISTORIAL
-=============================== */
+══════════════════════════════════════ */
 function renderHistorial() {
   const list = document.getElementById('hist-list')
   const keys = Object.keys(historial).reverse()
 
   if (!keys.length) {
-    list.innerHTML = '<div class="empty-state">Sin historial</div>'
+    list.innerHTML = '<div class="empty-state">Sin historial aún</div>'
     return
   }
 
-  list.innerHTML = keys.map(k => {
-    const d = historial[k]
-    const col = d.balance < 0 ? '#34d399' : d.balance < 300 ? '#fbbf24' : '#f87171'
+  list.innerHTML = keys.map((k, i) => {
+    const d     = historial[k]
+    const bal   = d.balance
+    const col   = bal < 0 ? '#4ade80' : bal < 300 ? '#facc15' : '#f87171'
+    const bg    = bal < 0 ? 'rgba(74,222,128,0.12)' : bal < 300 ? 'rgba(250,204,21,0.12)' : 'rgba(248,113,113,0.12)'
+    const label = bal < 0 ? 'deficit' : bal < 300 ? 'limite' : 'superavit'
     const fecha = new Date(k + 'T12:00:00').toLocaleDateString('es-AR', {
       weekday: 'long', day: 'numeric', month: 'long'
     })
+
+    // comidas del dia agrupadas
+    const comidasDia = registro[k] || []
+    const turnos = ['Desayuno','Almuerzo','Merienda','Cena','Extra']
+    const TURNO_EMOJI = { Desayuno:'🌅', Almuerzo:'☀️', Merienda:'🍎', Cena:'🌙', Extra:'⭐' }
+
+    let comidasHtml = ''
+    turnos.forEach(turno => {
+      const del = comidasDia.filter(c => (c.turno || getTurno(c.hora || '12:00')) === turno)
+      if (!del.length) return
+      comidasHtml += `<div class="hist-turno">${TURNO_EMOJI[turno]} ${turno}</div>`
+      del.forEach(c => {
+        comidasHtml += `
+          <div class="hist-comida-row">
+            <span>${c.comida}</span>
+            <span class="r-cal">${c.calorias} kcal</span>
+          </div>`
+      })
+    })
+
     return `
-      <div class="hist-item">
+      <div class="hist-item" style="animation-delay:${i * 0.04}s">
         <div class="hist-date">${fecha}</div>
         <div class="hist-row">
           <span class="h-k">Consumidas</span>
@@ -236,18 +442,32 @@ function renderHistorial() {
           <span class="h-k">Gastadas</span>
           <span class="h-v">${d.gastadas} kcal</span>
         </div>
-        <div class="hist-row">
+        <div class="hist-row" style="margin-bottom:${comidasHtml ? '12px' : '0'}">
           <span class="h-k">Balance</span>
-          <span class="h-v" style="color:${col}">${d.balance > 0 ? '+' : ''}${d.balance} kcal</span>
+          <span class="hist-badge" style="color:${col};background:${bg}">
+            ${bal > 0 ? '+' : ''}${bal} kcal · ${label}
+          </span>
         </div>
-      </div>
-    `
+        ${comidasHtml ? `<div class="hist-comidas">${comidasHtml}</div>` : ''}
+      </div>`
   }).join('')
 }
 
-/* ===============================
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+let toastTimer
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800)
+}
+
+/* ══════════════════════════════════════
    INICIO
-=============================== */
-cargarCaloriasAppleHealth()
+══════════════════════════════════════ */
+cargarAppleHealth()
 calcular()
-setInterval(cargarCaloriasAppleHealth, 300000)
+setInterval(cargarAppleHealth, 300000)
