@@ -38,6 +38,10 @@ if (localStorage.getItem('fecha') !== hoy) {
 /* base 2200 + ejercicio manual del día (Apple Health lo sobreescribirá si está disponible) */
 let gastadas = 2200 + ejercicio
 
+let actividadAH  = 0
+let ultimaSyncAH = null
+let estadoAH     = 'cargando'
+
 /* fecha legible */
 document.getElementById('fecha-hoy').textContent =
   new Date().toLocaleDateString('es-AR', {
@@ -313,7 +317,43 @@ document.getElementById('camInput').addEventListener('change', async function (e
 /* ══════════════════════════════════════
    APPLE HEALTH
 ══════════════════════════════════════ */
+function tiempoDesdeSync() {
+  if (!ultimaSyncAH) return '—'
+  const diff = Math.floor((Date.now() - ultimaSyncAH) / 60000)
+  const hora = ultimaSyncAH.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  if (diff < 1)  return `Sincronizado ahora · ${hora}`
+  if (diff < 60) return `Sincronizado hace ${diff} min · ${hora}`
+  return `Última sync: ${hora}`
+}
+
+function actualizarCardAH() {
+  const dotEl    = document.getElementById('ah-dot')
+  const txtEl    = document.getElementById('ah-status-txt')
+  const valEl    = document.getElementById('ah-val')
+  const syncEl   = document.getElementById('ah-sync')
+  if (!dotEl) return
+
+  valEl.textContent  = actividadAH > 0 ? actividadAH : '—'
+  syncEl.textContent = tiempoDesdeSync()
+
+  dotEl.className = 'ah-dot'
+  if (estadoAH === 'cargando') {
+    dotEl.classList.add('loading')
+    txtEl.textContent = 'Sincronizando...'
+  } else if (estadoAH === 'ok') {
+    dotEl.classList.add('ok')
+    txtEl.textContent = 'Sincronizado'
+  } else if (estadoAH === 'sin-datos') {
+    txtEl.textContent = 'Sin datos hoy'
+  } else {
+    dotEl.classList.add('error')
+    txtEl.textContent = 'Sin conexión'
+  }
+}
+
 async function cargarAppleHealth() {
+  estadoAH = 'cargando'
+  actualizarCardAH()
   try {
     const res  = await fetch(
       'https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json'
@@ -338,12 +378,17 @@ async function cargarAppleHealth() {
       }
     })
 
-    // base 1800 + actividad Apple Health + ejercicio manual
+    actividadAH  = actividad
+    ultimaSyncAH = new Date()
+    estadoAH     = actividad > 0 ? 'ok' : 'sin-datos'
+
     gastadas = 1800 + actividad + ejercicio
     calcular()
   } catch (e) {
+    estadoAH = 'error'
     console.log('Error Apple Health', e)
   }
+  actualizarCardAH()
 }
 
 /* ══════════════════════════════════════
@@ -482,3 +527,4 @@ document.getElementById('inp-kcal-ejercicio').addEventListener('keydown', e => {
 cargarAppleHealth()
 calcular()
 setInterval(cargarAppleHealth, 300000)
+setInterval(() => { if (ultimaSyncAH) actualizarCardAH() }, 60000)

@@ -117,6 +117,48 @@ body::after {
 .s-val.green { color: var(--green); }
 .s-val.red   { color: var(--red); }
 
+/* ── APPLE HEALTH CARD ── */
+.ah-card {
+  background: var(--s1); border: 0.5px solid var(--border2);
+  border-radius: 20px; padding: 16px 18px 14px;
+  margin-bottom: 16px; position: relative; overflow: hidden;
+  animation: fadeUp 0.5s 0.22s both;
+}
+.ah-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+.ah-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.ah-icon {
+  width: 14px; height: 14px; color: var(--muted); flex-shrink: 0;
+}
+.ah-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--muted); font-weight: 600; flex: 1;
+}
+.ah-status { display: flex; align-items: center; gap: 5px; }
+.ah-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--dim); flex-shrink: 0;
+}
+.ah-dot.ok      { background: var(--green); }
+.ah-dot.error   { background: var(--red); }
+.ah-dot.loading { background: var(--yellow); animation: ahPulse 1.2s ease-in-out infinite; }
+@keyframes ahPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.ah-status-txt {
+  font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+}
+.ah-body { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; }
+.ah-val {
+  font-family: 'JetBrains Mono', monospace; font-size: 30px;
+  font-weight: 400; letter-spacing: -2px; line-height: 1;
+}
+.ah-unit {
+  font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.ah-sync { font-size: 10px; color: var(--dim); letter-spacing: 0.03em; }
+
 /* ── FOTO BTN ── */
 .foto-btn {
   width: 100%; background: var(--text); color: #080808;

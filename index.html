@@ -43,6 +43,22 @@
         </div>
       </div>
 
+      <div class="ah-card" id="ah-card">
+        <div class="ah-header">
+          <svg class="ah-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.5 2 7 4.5 7 4.5S5 2.5 3 4c-2 1.5-1.5 5 0 7.5S8 16 12 22c4-6 7-8 9-10.5s2-6 0-7.5c-2-1.5-4 .5-4 .5S15.5 2 12 2z"/></svg>
+          <span class="ah-title">Apple Health</span>
+          <div class="ah-status">
+            <div class="ah-dot" id="ah-dot"></div>
+            <span class="ah-status-txt" id="ah-status-txt">Cargando</span>
+          </div>
+        </div>
+        <div class="ah-body">
+          <span class="ah-val" id="ah-val">—</span>
+          <span class="ah-unit">kcal activas hoy</span>
+        </div>
+        <div class="ah-sync" id="ah-sync">—</div>
+      </div>
+
       <button class="foto-btn" onclick="document.getElementById('camInput').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Registrar con foto
@@ -95,7 +111,7 @@
           <div class="divider-line"></div>
         </div>
         <div class="ejercicio-hint">
-          Abrí Salud o Apple Watch, fijate las calorías activas e ingresalas acá
+          Las calorías activas se sincronizan automáticamente desde Apple Health. Sumá acá actividades adicionales que no aparezcan allí.
         </div>
         <div class="form-group">
           <div class="inp-wrap" id="wrap-actividad">
