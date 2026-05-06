@@ -382,7 +382,8 @@ async function cargarAppleHealth() {
     ultimaSyncAH = new Date()
     estadoAH     = actividad > 0 ? 'ok' : 'sin-datos'
 
-    gastadas = 1800 + actividad + ejercicio
+    // Solo reemplaza el fallback de 2200 si Apple Health tiene datos reales del día
+    if (actividad > 0) gastadas = 1800 + actividad + ejercicio
     calcular()
   } catch (e) {
     estadoAH = 'error'
