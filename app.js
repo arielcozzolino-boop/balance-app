@@ -1,10 +1,10 @@
 /* ══════════════════════════════════════
-   BALANCE — app.js v4.5
-   Corrección: Apple Health Sync + No-Cache
+   BALANCE — app.js v5.0
+   URL Unificada: https://script.google.com/macros/s/AKfycbx5IrRVKJasqrdXIErIRYFiSR_7m9s5VS3Ahplwx0xb2GcCxizCMhxBGzJksBhGfh2rOw/exec
 ══════════════════════════════════════ */
 
-const SHEET_URL     = 'https://script.google.com/macros/s/AKfycbwKVnOElPBwzRbmoaMmSBfdoRE2XrcTYqlJR1DoSpM5rqDAkpo1Z5K0NF9FyOeoLFUZkQ/exec'
-const AH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKVnOElPBwzRbmoaMmSBfdoRE2XrcTYqlJR1DoSpM5rqDAkpo1Z5K0NF9FyOeoLFUZkQ/exec'
+const SHEET_URL     = 'https://script.google.com/macros/s/AKfycbx5IrRVKJasqrdXIErIRYFiSR_7m9s5VS3Ahplwx0xb2GcCxizCMhxBGzJksBhGfh2rOw/exec'
+const AH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5IrRVKJasqrdXIErIRYFiSR_7m9s5VS3Ahplwx0xb2GcCxizCMhxBGzJksBhGfh2rOw/exec'
 
 const hoy  = new Date().toISOString().split('T')[0]
 const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
@@ -16,7 +16,7 @@ function esc(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-/* ── estado ── */
+/* ── estado inicial ── */
 let consumidas   = parseInt(localStorage.getItem('consumidas') || '0')
 let ejercicio    = parseInt(localStorage.getItem('ejercicio')  || '0')
 let historial    = JSON.parse(localStorage.getItem('historial')           || '{}')
@@ -37,11 +37,12 @@ let actividadAH  = 0
 let ultimaSyncAH = null
 let estadoAH     = 'cargando'
 
+/* UI: Fecha en cabecera */
 document.getElementById('fecha-hoy').textContent =
   new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
 /* ══════════════════════════════════════
-   SYNC A GOOGLE SHEETS
+   FUNCIONES DE SYNC Y DATOS
 ══════════════════════════════════════ */
 async function syncSheet(payload) {
   try {
@@ -65,9 +66,6 @@ function getTurno(hora) {
   return 'Extra'
 }
 
-/* ══════════════════════════════════════
-   NAVEGACION
-══════════════════════════════════════ */
 function go(id, btn) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById('s-' + id).classList.add('active')
@@ -78,7 +76,7 @@ function go(id, btn) {
 }
 
 /* ══════════════════════════════════════
-   CALCULAR + UI
+   CÁLCULOS Y RENDER
 ══════════════════════════════════════ */
 function calcular() {
   const bal = consumidas - gastadas
@@ -128,7 +126,7 @@ function renderRegistro() {
   TURNOS.forEach(turno => {
     if (!grupos[turno].length) return
     html += `<div class="turno-label">${TURNO_EMOJI[turno]} ${turno}</div>`
-    grupos[turno].forEach((item, i) => {
+    grupos[turno].forEach((item) => {
       html += `<div class="registro-item"><span class="r-name">${esc(item.comida)}</span><span class="r-cal">${esc(item.calorias)} kcal</span></div>`
     })
   })
@@ -136,7 +134,49 @@ function renderRegistro() {
 }
 
 /* ══════════════════════════════════════
-   ACCIONES (MANUAL, EJERCICIO, FOTO)
+   APPLE HEALTH (CORREGIDO)
+══════════════════════════════════════ */
+function tiempoDesdeSync() {
+  if (!ultimaSyncAH) return '—'
+  const diff = Math.floor((Date.now() - ultimaSyncAH) / 60000)
+  const hora = ultimaSyncAH.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return diff < 1 ? `Sincronizado ahora · ${hora}` : `Hace ${diff} min · ${hora}`
+}
+
+function actualizarCardAH() {
+  const dotEl = document.getElementById('ah-dot'), txtEl = document.getElementById('ah-status-txt'), valEl = document.getElementById('ah-val'), syncEl = document.getElementById('ah-sync')
+  if (!dotEl) return
+  valEl.textContent = actividadAH > 0 ? actividadAH : '—'
+  syncEl.textContent = tiempoDesdeSync()
+  dotEl.className = 'ah-dot ' + (estadoAH === 'cargando' ? 'loading' : estadoAH === 'ok' ? 'ok' : estadoAH === 'error' ? 'error' : '')
+  txtEl.textContent = estadoAH === 'cargando' ? 'Sincronizando...' : estadoAH === 'ok' ? 'Sincronizado' : estadoAH === 'sin-datos' ? 'Sin datos hoy' : 'Sin conexión'
+}
+
+async function cargarAppleHealth() {
+  estadoAH = 'cargando'; actualizarCardAH()
+  document.getElementById('ah-refresh')?.classList.add('spinning')
+  try {
+    // Agregamos t= para evitar caché y redirect follow para Apps Script
+    const res = await fetch(`${AH_SCRIPT_URL}?fecha=${hoy}&t=${Date.now()}`, {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    if (!res.ok) throw new Error("Error HTTP " + res.status)
+    const data = await res.json()
+    actividadAH = Math.round(data.calorias || 0)
+    ultimaSyncAH = new Date()
+    estadoAH = actividadAH > 0 ? 'ok' : 'sin-datos'
+    if (actividadAH > 0) gastadas = 1800 + actividadAH + ejercicio
+    calcular()
+  } catch (e) {
+    estadoAH = 'error'; console.log('Error Apple Health', e)
+  } finally {
+    document.getElementById('ah-refresh')?.classList.remove('spinning'); actualizarCardAH()
+  }
+}
+
+/* ══════════════════════════════════════
+   ACCIONES MANUALES
 ══════════════════════════════════════ */
 async function agregarManual() {
   const n = document.getElementById('inp-comida').value.trim()
@@ -169,56 +209,38 @@ async function agregarEjercicio() {
 }
 
 /* ══════════════════════════════════════
-   APPLE HEALTH (CORREGIDO)
+   HISTORIAL Y GRÁFICOS
 ══════════════════════════════════════ */
-function tiempoDesdeSync() {
-  if (!ultimaSyncAH) return '—'
-  const diff = Math.floor((Date.now() - ultimaSyncAH) / 60000)
-  const hora = ultimaSyncAH.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
-  return diff < 1 ? `Sincronizado ahora · ${hora}` : `Hace ${diff} min · ${hora}`
+function dibujarGrafico() {
+  const bars  = document.getElementById('chart-bars'); const stats = document.getElementById('prog-stats');
+  const keys  = Object.keys(historial).slice(-7)
+  if (!keys.length) { bars.innerHTML = '<div class="empty-state">Sin datos</div>'; return }
+  const valores = keys.map(k => historial[k]?.balance || 0)
+  const maxVal  = Math.max(...valores.map(Math.abs), 1)
+  bars.innerHTML = keys.map((k, i) => {
+    const b = historial[k]?.balance || 0; const h = Math.max((Math.abs(b) / maxVal) * 110, 3)
+    const col = b < 0 ? '#4ade80' : b < 300 ? '#facc15' : '#f87171'
+    return `<div class="bar-col"><div class="b-val">${b}</div><div class="b" style="height:${h}px;background:${col}"></div><div class="b-day">${DIAS[new Date(k+'T12:00:00').getDay()]}</div></div>`
+  }).join('')
 }
 
-function actualizarCardAH() {
-  const dotEl = document.getElementById('ah-dot'), txtEl = document.getElementById('ah-status-txt'), valEl = document.getElementById('ah-val'), syncEl = document.getElementById('ah-sync')
-  if (!dotEl) return
-  valEl.textContent = actividadAH > 0 ? actividadAH : '—'
-  syncEl.textContent = tiempoDesdeSync()
-  dotEl.className = 'ah-dot ' + (estadoAH === 'cargando' ? 'loading' : estadoAH === 'ok' ? 'ok' : estadoAH === 'error' ? 'error' : '')
-  txtEl.textContent = estadoAH === 'cargando' ? 'Sincronizando...' : estadoAH === 'ok' ? 'Sincronizado' : estadoAH === 'sin-datos' ? 'Sin datos hoy' : 'Sin conexión'
+function renderHistorial() {
+  const list = document.getElementById('hist-list'); const keys = Object.keys(historial).reverse()
+  if (!keys.length) { list.innerHTML = '<div class="empty-state">Sin historial</div>'; return }
+  list.innerHTML = keys.map(k => {
+    const d = historial[k]; const col = d.balance < 0 ? '#4ade80' : '#f87171'
+    return `<div class="hist-item"><div class="hist-date">${k}</div><div class="hist-row"><span>Balance</span><span style="color:${col}">${d.balance} kcal</span></div></div>`
+  }).join('')
 }
 
-async function cargarAppleHealth() {
-  estadoAH = 'cargando'; actualizarCardAH()
-  document.getElementById('ah-refresh')?.classList.add('spinning')
-  try {
-    // Usamos &t= para forzar al navegador a pedir datos nuevos al script
-    const res = await fetch(`${AH_SCRIPT_URL}?fecha=${hoy}&t=${Date.now()}`, {
-      method: 'GET',
-      redirect: 'follow'
-    })
-    if (!res.ok) throw new Error("Error HTTP " + res.status)
-    const data = await res.json()
-    actividadAH = Math.round(data.calorias || 0)
-    ultimaSyncAH = new Date()
-    estadoAH = actividadAH > 0 ? 'ok' : 'sin-datos'
-    if (actividadAH > 0) gastadas = 1800 + actividadAH + ejercicio
-    calcular()
-  } catch (e) {
-    estadoAH = 'error'; console.log('Error Apple Health', e)
-  } finally {
-    document.getElementById('ah-refresh')?.classList.remove('spinning'); actualizarCardAH()
-  }
-}
-
-/* ══════════════════════════════════════
-   AUXILIARES E INICIO
-══════════════════════════════════════ */
 function toast(msg) {
   const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show')
   setTimeout(() => el.classList.remove('show'), 2800)
 }
 
-// Estos dos deben existir en tu HTML para que no de error
+/* ══════════════════════════════════════
+   INICIO
+══════════════════════════════════════ */
 document.getElementById('inp-cal')?.addEventListener('keydown', e => { if (e.key === 'Enter') agregarManual() })
 document.getElementById('inp-kcal-ejercicio')?.addEventListener('keydown', e => { if (e.key === 'Enter') agregarEjercicio() })
 
