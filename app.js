@@ -395,7 +395,7 @@ async function cargarAppleHealth() {
         }
       }
 
-      if (esHoy) actividad = cal
+      if (esHoy) actividad = Math.round(cal)
     })
 
     actividadAH  = actividad
