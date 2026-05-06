@@ -353,6 +353,7 @@ function actualizarCardAH() {
 
 async function cargarAppleHealth() {
   estadoAH = 'cargando'
+  document.getElementById('ah-refresh')?.classList.add('spinning')
   actualizarCardAH()
   try {
     const res  = await fetch(
@@ -409,6 +410,7 @@ async function cargarAppleHealth() {
     estadoAH = 'error'
     console.log('Error Apple Health', e)
   }
+  document.getElementById('ah-refresh')?.classList.remove('spinning')
   actualizarCardAH()
 }
 

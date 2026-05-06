@@ -158,6 +158,15 @@ body::after {
   font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase;
 }
 .ah-sync { font-size: 10px; color: var(--dim); letter-spacing: 0.03em; }
+.ah-refresh {
+  background: none; border: none; padding: 4px; cursor: pointer;
+  color: var(--muted); display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; transition: color 0.2s, transform 0.2s;
+}
+.ah-refresh:active { color: var(--text); transform: scale(0.88); }
+.ah-refresh svg { width: 14px; height: 14px; }
+.ah-refresh.spinning svg { animation: ahSpin 0.7s linear infinite; }
+@keyframes ahSpin { to { transform: rotate(360deg); } }
 
 /* ── FOTO BTN ── */
 .foto-btn {
