@@ -348,10 +348,6 @@ async function confirmarFotoItems() {
   toast(`${turno} · ${label} — ${total} kcal`)
   go('hoy', document.querySelectorAll('.nav-btn')[0])
 }
-    e.target.value = ''
-  }
-  reader.readAsDataURL(archivo)
-})
 
 /* ══════════════════════════════════════
    APPLE HEALTH
@@ -396,12 +392,22 @@ async function cargarAppleHealth() {
     actualizarCardAH()
     return
   }
+  
   estadoAH = 'cargando'
   document.getElementById('ah-refresh')?.classList.add('spinning')
   actualizarCardAH()
+  
   try {
-    const res      = await fetch(`${AH_SCRIPT_URL}?fecha=${hoy}`)
-    const data     = await res.json()
+    const res = await fetch(`${AH_SCRIPT_URL}?fecha=${hoy}`, {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    
+    if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
+    const data = await res.json()
     const actividad = Math.round(data.calorias || 0)
 
     actividadAH  = actividad
@@ -413,9 +419,10 @@ async function cargarAppleHealth() {
   } catch (e) {
     estadoAH = 'error'
     console.log('Error Apple Health', e)
+  } finally {
+    document.getElementById('ah-refresh')?.classList.remove('spinning')
+    actualizarCardAH()
   }
-  document.getElementById('ah-refresh')?.classList.remove('spinning')
-  actualizarCardAH()
 }
 
 /* ══════════════════════════════════════
