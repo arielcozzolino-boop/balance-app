@@ -4,7 +4,7 @@
 ══════════════════════════════════════ */
 
 const SHEET_URL    = 'https://script.google.com/macros/s/AKfycbzIcoU9vkng41n7wekGUItDsFDgehtYAHSX8oWPmtR_yPszRYoSfuh4sq8T2xrcfQ6-bQ/exec'
-const AH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPxHg2mzb4YHRETBCZGskbJQtuWguhaLFQ_46QFYgSHgSlBKLs7E4ZSlEy3k5lnxPqEw/exec'
+const AH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZjPZxpWCgxVrFBkRj76Au4-7owtAL4yNMSRdm7eLfHBODy3PLA1qitvA6i3vJERRxug/exec'
 
 const hoy  = new Date().toISOString().split('T')[0]
 const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
