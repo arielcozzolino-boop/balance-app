@@ -372,10 +372,30 @@ async function cargarAppleHealth() {
       const fechaRaw = r.c[1]?.v
       const cal      = r.c[3]?.v
       if (!fechaRaw || !cal) return
-      const p = fechaRaw.split(' ')[0].split('/')
-      if (parseInt(p[0]) === diaH && parseInt(p[1]) === mesH && parseInt(p[2]) === anioH) {
-        actividad = cal
+
+      let esHoy = false
+      const s = String(fechaRaw)
+
+      // Formato Google Visualization: "Date(año, mes0idx, día)"
+      const gviz = s.match(/Date\((\d+),\s*(\d+),\s*(\d+)\)/)
+      if (gviz) {
+        esHoy = +gviz[1] === anioH && +gviz[2] === mesH - 1 && +gviz[3] === diaH
+      } else {
+        // Formatos texto: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD (con posible hora)
+        const clean = s.split(' ')[0]
+        const slash = clean.split('/')
+        const dash  = clean.split('-')
+        if (slash.length === 3) {
+          const [a, b, c] = slash.map(Number)
+          esHoy = (a === diaH && b === mesH && c === anioH) ||  // DD/MM/YYYY
+                  (a === mesH && b === diaH && c === anioH)     // MM/DD/YYYY
+        } else if (dash.length === 3) {
+          const [a, b, c] = dash.map(Number)
+          esHoy = a === anioH && b === mesH && c === diaH       // YYYY-MM-DD
+        }
       }
+
+      if (esHoy) actividad = cal
     })
 
     actividadAH  = actividad
