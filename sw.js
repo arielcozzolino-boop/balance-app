@@ -1,4 +1,4 @@
-const VERSION = 'balance-v6'
+const VERSION = 'balance-v7'
 
 self.addEventListener('install', e => {
   self.skipWaiting()
