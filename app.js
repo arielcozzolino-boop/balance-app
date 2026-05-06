@@ -78,6 +78,7 @@ function go(id, btn) {
   btn.classList.add('active')
   if (id === 'progreso')  dibujarGrafico()
   if (id === 'historial') renderHistorial()
+  if (id === 'plan')      renderPlan()
 }
 
 /* ══════════════════════════════════════
@@ -256,8 +257,92 @@ function renderHistorial() {
 function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 2800) }
 
 /* ══════════════════════════════════════
+   PLAN NUTRICIONAL
+══════════════════════════════════════ */
+let planNutricional = JSON.parse(localStorage.getItem('planNutricional') || '{}')
+
+const PLAN_KEYWORDS = ['desayuno','almuerzo','merienda','cena','colación','colacion','snack','extra','media mañana','media manana','pre entreno','post entreno','pre-entreno','post-entreno','cena liviana','colación vespertina']
+
+function emojiSeccion(nombre) {
+  const n = nombre.toLowerCase()
+  if (n.includes('desayuno')) return '🌅'
+  if (n.includes('almuerzo')) return '☀️'
+  if (n.includes('merienda') || n.includes('media')) return '🍎'
+  if (n.includes('cena')) return '🌙'
+  if (n.includes('pre') || n.includes('post')) return '💪'
+  return '⭐'
+}
+
+function parsearPlan(texto) {
+  const lines = texto.split('\n').map(l => l.trim()).filter(l => l)
+  const plan = {}
+  const orden = []
+  let seccion = null
+
+  for (const line of lines) {
+    const lower = line.toLowerCase()
+    const esSeccion = PLAN_KEYWORDS.some(k => lower.includes(k)) && line.length < 60
+    if (esSeccion) {
+      seccion = line.replace(/^[#\-\*:]+\s*/, '').replace(/[:]+$/, '').trim()
+      if (!plan[seccion]) { plan[seccion] = []; orden.push(seccion) }
+    } else if (seccion) {
+      const opcion = line.replace(/^[\-\*•\d\.]+\s*/, '').trim()
+      if (opcion) plan[seccion].push(opcion)
+    }
+  }
+  return { plan, orden }
+}
+
+function renderPlan() {
+  const list = document.getElementById('plan-list')
+  const secciones = Object.keys(planNutricional)
+  if (!secciones.length) {
+    list.innerHTML = `
+      <div class="plan-empty">
+        <div class="plan-empty-icon">📋</div>
+        <div class="plan-empty-txt">Pegá el plan de tu nutricionista</div>
+        <div class="plan-empty-sub">Copiá el texto del documento y usá el botón de abajo</div>
+      </div>`
+    return
+  }
+  list.innerHTML = secciones.map(sec => `
+    <div class="plan-seccion">
+      <div class="plan-seccion-header">
+        <span class="plan-seccion-emoji">${emojiSeccion(sec)}</span>
+        <span class="plan-seccion-nombre">${esc(sec)}</span>
+      </div>
+      <div class="plan-opciones">
+        ${planNutricional[sec].map(op => `<div class="plan-opcion">${esc(op)}</div>`).join('')}
+      </div>
+    </div>`).join('')
+}
+
+function abrirPlanModal() {
+  document.getElementById('plan-textarea').value = ''
+  document.getElementById('plan-modal').classList.add('active')
+  setTimeout(() => document.getElementById('plan-textarea').focus(), 400)
+}
+
+function cerrarPlanModal() {
+  document.getElementById('plan-modal').classList.remove('active')
+}
+
+function guardarPlan() {
+  const texto = document.getElementById('plan-textarea').value.trim()
+  if (!texto) { toast('Pegá el texto primero'); return }
+  const { plan, orden } = parsearPlan(texto)
+  if (!orden.length) { toast('No encontré secciones (Desayuno, Almuerzo…)'); return }
+  planNutricional = plan
+  localStorage.setItem('planNutricional', JSON.stringify(plan))
+  cerrarPlanModal()
+  renderPlan()
+  toast(`Plan guardado · ${orden.length} secciones`)
+}
+
+/* ══════════════════════════════════════
    INICIO
 ══════════════════════════════════════ */
 cargarAppleHealth()
 calcular()
+renderPlan()
 setInterval(cargarAppleHealth, 300000)

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Balance</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div class="app">
@@ -163,6 +163,25 @@
       <div class="hist-list" id="hist-list"></div>
     </div>
 
+    <!-- ── PLAN ── -->
+    <div class="screen" id="s-plan">
+      <div class="screen-header">
+        <div class="eyebrow">Nutricionista</div>
+        <h2>Mi Plan</h2>
+      </div>
+      <div class="plan-list" id="plan-list">
+        <div class="plan-empty">
+          <div class="plan-empty-icon">📋</div>
+          <div class="plan-empty-txt">Pegá el plan de tu nutricionista</div>
+          <div class="plan-empty-sub">Copiá el texto del documento y usá el botón de abajo</div>
+        </div>
+      </div>
+      <button class="plan-paste-btn" onclick="abrirPlanModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        Pegar plan de la nutricionista
+      </button>
+    </div>
+
   </div>
 
   <!-- ── NAV ── -->
@@ -182,6 +201,10 @@
     <button class="nav-btn" onclick="go('historial',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Historial
+    </button>
+    <button class="nav-btn" onclick="go('plan',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      Plan
     </button>
   </nav>
 </div>
@@ -207,7 +230,23 @@
     <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
   </div>
 </div>
-<script src="app.js?v=12"></script>
+<!-- ── PLAN MODAL ── -->
+<div class="foto-modal" id="plan-modal">
+  <div class="foto-modal-bg" onclick="cerrarPlanModal()"></div>
+  <div class="foto-modal-card">
+    <div class="fm-header">
+      <div class="fm-title">Pegar plan</div>
+      <button class="fm-close" onclick="cerrarPlanModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fm-hint">Copiá el texto del documento de tu nutricionista y pegalo acá. La app lo ordena sola.</div>
+    <textarea class="plan-textarea" id="plan-textarea" placeholder="Ej:&#10;Desayuno&#10;- Tostadas con mermelada&#10;- Huevo con café&#10;&#10;Almuerzo&#10;- Pollo con arroz&#10;- Ensalada con atún"></textarea>
+    <button class="fm-confirm-btn" onclick="guardarPlan()">Guardar plan</button>
+  </div>
+</div>
+
+<script src="app.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg.update())
