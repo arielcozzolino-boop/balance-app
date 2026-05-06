@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════
-   BALANCE — app.js v3
+   BALANCE — app.js v4
    con sync a Google Sheets + Ejercicio
 ══════════════════════════════════════ */
 
@@ -8,13 +8,23 @@ const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIcoU9vkng41n7wekGUI
 const hoy  = new Date().toISOString().split('T')[0]
 const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
 
+const TURNOS      = ['Desayuno','Almuerzo','Merienda','Cena','Extra']
+const TURNO_EMOJI = { Desayuno:'🌅', Almuerzo:'☀️', Merienda:'🍎', Cena:'🌙', Extra:'⭐' }
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 /* ── estado ── */
-let consumidas = parseInt(localStorage.getItem('consumidas') || '0')
-let gastadas   = 2200
-let ejercicio  = parseInt(localStorage.getItem('ejercicio')  || '0')
-let historial  = JSON.parse(localStorage.getItem('historial')       || '{}')
-let registro   = JSON.parse(localStorage.getItem('registroComidas') || '{}')
-let regEjercicio = JSON.parse(localStorage.getItem('registroEjercicio') || '{}')
+let consumidas   = parseInt(localStorage.getItem('consumidas') || '0')
+let ejercicio    = parseInt(localStorage.getItem('ejercicio')  || '0')
+let historial    = JSON.parse(localStorage.getItem('historial')           || '{}')
+let registro     = JSON.parse(localStorage.getItem('registroComidas')     || '{}')
+let regEjercicio = JSON.parse(localStorage.getItem('registroEjercicio')   || '{}')
 
 /* reset diario */
 if (localStorage.getItem('fecha') !== hoy) {
@@ -24,6 +34,9 @@ if (localStorage.getItem('fecha') !== hoy) {
   consumidas = 0
   ejercicio  = 0
 }
+
+/* base 2200 + ejercicio manual del día (Apple Health lo sobreescribirá si está disponible) */
+let gastadas = 2200 + ejercicio
 
 /* fecha legible */
 document.getElementById('fecha-hoy').textContent =
@@ -136,29 +149,23 @@ function renderRegistro() {
     return
   }
 
-  // agrupar por turno
-  const turnos = ['Desayuno','Almuerzo','Merienda','Cena','Extra']
   const grupos = {}
-  turnos.forEach(t => { grupos[t] = [] })
+  TURNOS.forEach(t => { grupos[t] = [] })
   items.forEach(item => {
     const t = item.turno || getTurno(item.hora || '12:00')
     if (!grupos[t]) grupos[t] = []
     grupos[t].push(item)
   })
 
-  const TURNO_EMOJI = {
-    Desayuno: '🌅', Almuerzo: '☀️', Merienda: '🍎', Cena: '🌙', Extra: '⭐'
-  }
-
   let html = ''
-  turnos.forEach(turno => {
+  TURNOS.forEach(turno => {
     if (!grupos[turno].length) return
     html += `<div class="turno-label">${TURNO_EMOJI[turno]} ${turno}</div>`
     grupos[turno].forEach((item, i) => {
       html += `
         <div class="registro-item" style="animation-delay:${i * 0.05}s">
-          <span class="r-name">${item.comida}</span>
-          <span class="r-cal">${item.calorias} kcal</span>
+          <span class="r-name">${esc(item.comida)}</span>
+          <span class="r-cal">${esc(item.calorias)} kcal</span>
         </div>`
     })
   })
@@ -259,6 +266,7 @@ document.getElementById('camInput').addEventListener('change', async function (e
   toast('Analizando imagen...')
 
   const reader = new FileReader()
+  reader.onerror = () => { toast('Error al leer el archivo'); e.target.value = '' }
   reader.onload = async function () {
     try {
       const res = await fetch('https://calorias-foto.ariel-cozzolino.workers.dev/', {
@@ -412,21 +420,17 @@ function renderHistorial() {
       weekday: 'long', day: 'numeric', month: 'long'
     })
 
-    // comidas del dia agrupadas
     const comidasDia = registro[k] || []
-    const turnos = ['Desayuno','Almuerzo','Merienda','Cena','Extra']
-    const TURNO_EMOJI = { Desayuno:'🌅', Almuerzo:'☀️', Merienda:'🍎', Cena:'🌙', Extra:'⭐' }
-
     let comidasHtml = ''
-    turnos.forEach(turno => {
+    TURNOS.forEach(turno => {
       const del = comidasDia.filter(c => (c.turno || getTurno(c.hora || '12:00')) === turno)
       if (!del.length) return
       comidasHtml += `<div class="hist-turno">${TURNO_EMOJI[turno]} ${turno}</div>`
       del.forEach(c => {
         comidasHtml += `
           <div class="hist-comida-row">
-            <span>${c.comida}</span>
-            <span class="r-cal">${c.calorias} kcal</span>
+            <span>${esc(c.comida)}</span>
+            <span class="r-cal">${esc(c.calorias)} kcal</span>
           </div>`
       })
     })
@@ -468,6 +472,13 @@ function toast(msg) {
 /* ══════════════════════════════════════
    INICIO
 ══════════════════════════════════════ */
+document.getElementById('inp-cal').addEventListener('keydown', e => {
+  if (e.key === 'Enter') agregarManual()
+})
+document.getElementById('inp-kcal-ejercicio').addEventListener('keydown', e => {
+  if (e.key === 'Enter') agregarEjercicio()
+})
+
 cargarAppleHealth()
 calcular()
 setInterval(cargarAppleHealth, 300000)

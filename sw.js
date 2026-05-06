@@ -1,4 +1,4 @@
-const VERSION = 'balance-v3'
+const VERSION = 'balance-v4'
 
 self.addEventListener('install', e => {
   self.skipWaiting()
@@ -15,7 +15,16 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return
+
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    caches.open(VERSION).then(cache =>
+      fetch(e.request)
+        .then(res => {
+          if (res.ok) cache.put(e.request, res.clone())
+          return res
+        })
+        .catch(() => cache.match(e.request))
+    )
   )
 })
