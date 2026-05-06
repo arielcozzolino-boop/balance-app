@@ -3,7 +3,8 @@
    con sync a Google Sheets + Ejercicio
 ══════════════════════════════════════ */
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIcoU9vkng41n7wekGUItDsFDgehtYAHSX8oWPmtR_yPszRYoSfuh4sq8T2xrcfQ6-bQ/exec'
+const SHEET_URL    = 'https://script.google.com/macros/s/AKfycbzIcoU9vkng41n7wekGUItDsFDgehtYAHSX8oWPmtR_yPszRYoSfuh4sq8T2xrcfQ6-bQ/exec'
+const AH_SCRIPT_URL = 'PENDIENTE' // reemplazar con la URL del Apps Script nuevo
 
 const hoy  = new Date().toISOString().split('T')[0]
 const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
@@ -352,58 +353,23 @@ function actualizarCardAH() {
 }
 
 async function cargarAppleHealth() {
+  if (AH_SCRIPT_URL === 'PENDIENTE') {
+    estadoAH = 'sin-datos'
+    actualizarCardAH()
+    return
+  }
   estadoAH = 'cargando'
   document.getElementById('ah-refresh')?.classList.add('spinning')
   actualizarCardAH()
   try {
-    const res  = await fetch(
-      'https://docs.google.com/spreadsheets/d/1g8SMVE3-wGiHhxG3zsgoaA8HiGup0mrL8jiCybnEx4A/gviz/tq?tqx=out:json'
-    )
-    const text = await res.text()
-    const json = JSON.parse(text.substr(47).slice(0, -2))
-    const rows = json.table.rows
-
-    const now   = new Date()
-    const diaH  = now.getDate()
-    const mesH  = now.getMonth() + 1
-    const anioH = now.getFullYear()
-    let actividad = 0
-
-    rows.forEach(r => {
-      const fechaRaw = r.c[1]?.v
-      const cal      = r.c[3]?.v
-      if (!fechaRaw || !cal) return
-
-      let esHoy = false
-      const s = String(fechaRaw)
-
-      // Formato Google Visualization: "Date(año, mes0idx, día)"
-      const gviz = s.match(/Date\((\d+),\s*(\d+),\s*(\d+)\)/)
-      if (gviz) {
-        esHoy = +gviz[1] === anioH && +gviz[2] === mesH - 1 && +gviz[3] === diaH
-      } else {
-        // Formatos texto: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD (con posible hora)
-        const clean = s.split(' ')[0]
-        const slash = clean.split('/')
-        const dash  = clean.split('-')
-        if (slash.length === 3) {
-          const [a, b, c] = slash.map(Number)
-          esHoy = (a === diaH && b === mesH && c === anioH) ||  // DD/MM/YYYY
-                  (a === mesH && b === diaH && c === anioH)     // MM/DD/YYYY
-        } else if (dash.length === 3) {
-          const [a, b, c] = dash.map(Number)
-          esHoy = a === anioH && b === mesH && c === diaH       // YYYY-MM-DD
-        }
-      }
-
-      if (esHoy) actividad = Math.round(cal)
-    })
+    const res      = await fetch(`${AH_SCRIPT_URL}?fecha=${hoy}`)
+    const data     = await res.json()
+    const actividad = Math.round(data.calorias || 0)
 
     actividadAH  = actividad
     ultimaSyncAH = new Date()
     estadoAH     = actividad > 0 ? 'ok' : 'sin-datos'
 
-    // Solo reemplaza el fallback de 2200 si Apple Health tiene datos reales del día
     if (actividad > 0) gastadas = 1800 + actividad + ejercicio
     calcular()
   } catch (e) {
