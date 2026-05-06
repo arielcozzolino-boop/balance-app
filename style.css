@@ -132,7 +132,7 @@ body::after {
   display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
 }
 .ah-icon {
-  width: 14px; height: 14px; color: var(--muted); flex-shrink: 0;
+  font-size: 14px; line-height: 1; flex-shrink: 0;
 }
 .ah-title {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;

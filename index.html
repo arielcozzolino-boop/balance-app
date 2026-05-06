@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Balance</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div class="app">
@@ -45,7 +45,7 @@
 
       <div class="ah-card" id="ah-card">
         <div class="ah-header">
-          <svg class="ah-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.5 2 7 4.5 7 4.5S5 2.5 3 4c-2 1.5-1.5 5 0 7.5S8 16 12 22c4-6 7-8 9-10.5s2-6 0-7.5c-2-1.5-4 .5-4 .5S15.5 2 12 2z"/></svg>
+          <span class="ah-icon">🍎</span>
           <span class="ah-title">Apple Health</span>
           <div class="ah-status">
             <div class="ah-dot" id="ah-dot"></div>
@@ -184,7 +184,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg.update())

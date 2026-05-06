@@ -1,4 +1,4 @@
-const VERSION = 'balance-v5'
+const VERSION = 'balance-v6'
 
 self.addEventListener('install', e => {
   self.skipWaiting()
@@ -16,6 +16,8 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
+  // Solo cachear recursos propios; dejar pasar requests a APIs externas sin interferir
+  if (!e.request.url.startsWith(self.location.origin)) return
 
   e.respondWith(
     caches.open(VERSION).then(cache =>
