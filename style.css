@@ -353,3 +353,61 @@ body::after {
   pointer-events: none; white-space: nowrap; z-index: 200;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── FOTO MODAL ── */
+.foto-modal {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.foto-modal.active { opacity: 1; pointer-events: all; }
+.foto-modal-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+}
+.foto-modal-card {
+  position: relative; width: 100%; max-width: 430px; margin: 0 auto;
+  background: var(--s1); border-radius: 28px 28px 0 0;
+  padding: 24px 22px 44px; border-top: 0.5px solid var(--border2);
+  transform: translateY(100%);
+  transition: transform 0.42s cubic-bezier(0.16,1,0.3,1);
+}
+.foto-modal.active .foto-modal-card { transform: translateY(0); }
+.fm-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.fm-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.fm-close {
+  background: var(--s3); border: none; color: var(--muted); cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.fm-close:active { background: var(--s2); }
+.fm-close svg { width: 13px; height: 13px; }
+.fm-hint {
+  font-size: 11px; color: var(--muted); margin-bottom: 20px; letter-spacing: 0.02em;
+}
+.fm-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.fm-item { display: flex; gap: 8px; }
+.fm-cal-wrap { width: 88px; flex-shrink: 0; }
+.fm-add-btn {
+  width: 100%; background: none; border: 0.5px dashed var(--border2);
+  border-radius: 14px; padding: 14px; color: var(--muted);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; margin-bottom: 10px; letter-spacing: 0.03em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s;
+}
+.fm-add-btn svg { width: 14px; height: 14px; }
+.fm-add-btn:active { background: var(--s2); }
+.fm-confirm-btn {
+  width: 100%; background: var(--text); color: #080808; border: none;
+  border-radius: 14px; padding: 18px;
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.03em; cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.fm-confirm-btn:active { transform: scale(0.97); opacity: 0.85; }

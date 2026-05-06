@@ -264,52 +264,90 @@ async function agregarEjercicio() {
 /* ══════════════════════════════════════
    CAMARA + IA
 ══════════════════════════════════════ */
+let fotoItems = []
+
 document.getElementById('camInput').addEventListener('change', async function (e) {
   const archivo = e.target.files[0]
   if (!archivo) return
-
   toast('Analizando imagen...')
-
   const reader = new FileReader()
   reader.onerror = () => { toast('Error al leer el archivo'); e.target.value = '' }
   reader.onload = async function () {
     try {
-      const res = await fetch('https://calorias-foto.ariel-cozzolino.workers.dev/', {
+      const res  = await fetch('https://calorias-foto.ariel-cozzolino.workers.dev/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: reader.result })
       })
-      const data    = await res.json()
-      const calorias = data.calorias || 650
-      const comida   = data.comida   || 'Comida'
-      const hora     = horaActual()
-      const turno    = getTurno(hora)
-
-      if (confirm(`${comida}\n${calorias} kcal\n¿Agregar?`)) {
-        consumidas += calorias
-        if (!registro[hoy]) registro[hoy] = []
-        registro[hoy].push({ comida, calorias, hora, turno })
-        localStorage.setItem('registroComidas', JSON.stringify(registro))
-
-        calcular()
-
-        syncSheet({
-          type: 'comida',
-          fecha: hoy,
-          comida,
-          calorias,
-          hora,
-          turno,
-          consumidasTotal: consumidas,
-          gastadasTotal:   gastadas,
-          balance:         consumidas - gastadas
-        })
-
-        toast(`${turno} · ${comida} — ${calorias} kcal`)
-      }
+      const data = await res.json()
+      abrirFotoModal([{ comida: data.comida || 'Comida', calorias: data.calorias || 650 }])
     } catch {
       toast('Error al analizar la imagen')
     }
+    e.target.value = ''
+  }
+  reader.readAsDataURL(archivo)
+})
+
+function abrirFotoModal(items) {
+  fotoItems = items.map(i => ({ ...i }))
+  renderFotoItems()
+  document.getElementById('foto-modal').classList.add('active')
+}
+
+function cerrarFotoModal() {
+  document.getElementById('foto-modal').classList.remove('active')
+}
+
+function renderFotoItems() {
+  document.getElementById('fm-items').innerHTML = fotoItems.map((item, i) => `
+    <div class="fm-item">
+      <div class="inp-wrap ${item.comida ? 'filled' : ''}" id="fm-wrap-n${i}">
+        <label class="inp-label">Alimento</label>
+        <input class="inp" value="${esc(item.comida)}"
+          oninput="fotoItems[${i}].comida=this.value;toggleFilled('fm-wrap-n${i}',this)"/>
+      </div>
+      <div class="inp-wrap fm-cal-wrap ${item.calorias ? 'filled' : ''}" id="fm-wrap-c${i}">
+        <label class="inp-label">kcal</label>
+        <input class="inp" type="number" inputmode="numeric" value="${item.calorias || ''}"
+          oninput="fotoItems[${i}].calorias=parseInt(this.value)||0;toggleFilled('fm-wrap-c${i}',this)"/>
+      </div>
+    </div>`).join('')
+}
+
+function agregarItemFoto() {
+  fotoItems.push({ comida: '', calorias: 0 })
+  renderFotoItems()
+  document.querySelector('#fm-items .fm-item:last-child input').focus()
+}
+
+async function confirmarFotoItems() {
+  const validos = fotoItems.filter(i => i.comida.trim() && i.calorias > 0)
+  if (!validos.length) { toast('Completá al menos un ítem'); return }
+
+  const hora  = horaActual()
+  const turno = getTurno(hora)
+
+  for (const item of validos) {
+    consumidas += item.calorias
+    if (!registro[hoy]) registro[hoy] = []
+    registro[hoy].push({ comida: item.comida, calorias: item.calorias, hora, turno })
+    syncSheet({
+      type: 'comida', fecha: hoy,
+      comida: item.comida, calorias: item.calorias, hora, turno,
+      consumidasTotal: consumidas, gastadasTotal: gastadas,
+      balance: consumidas - gastadas
+    })
+  }
+
+  localStorage.setItem('registroComidas', JSON.stringify(registro))
+  calcular()
+  cerrarFotoModal()
+  const total = validos.reduce((s, i) => s + i.calorias, 0)
+  const label = validos.length > 1 ? `${validos.length} ítems` : validos[0].comida
+  toast(`${turno} · ${label} — ${total} kcal`)
+  go('hoy', document.querySelectorAll('.nav-btn')[0])
+}
     e.target.value = ''
   }
   reader.readAsDataURL(archivo)

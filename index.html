@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Balance</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 <div class="app">
@@ -187,7 +187,27 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=11"></script>
+
+<!-- ── FOTO MODAL ── -->
+<div class="foto-modal" id="foto-modal">
+  <div class="foto-modal-bg" onclick="cerrarFotoModal()"></div>
+  <div class="foto-modal-card">
+    <div class="fm-header">
+      <div class="fm-title">Foto analizada</div>
+      <button class="fm-close" onclick="cerrarFotoModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fm-hint">Editá lo que detectó la IA y agregá lo que falta</div>
+    <div class="fm-items" id="fm-items"></div>
+    <button class="fm-add-btn" onclick="agregarItemFoto()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar ítem que falta
+    </button>
+    <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
+  </div>
+</div>
+<script src="app.js?v=12"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg.update())
