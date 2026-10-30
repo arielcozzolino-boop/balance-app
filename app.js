@@ -18,7 +18,7 @@ const ATAJO_NOMBRE  = 'Balance Health'
 /* Criterio de gasto (revisar antes de cambiar):
    - con datos de Apple Health: BASAL + activas AH + ejercicio manual
    - sin datos:                 FALLBACK + ejercicio manual             */
-const BASAL    = 1800
+const BASAL    = 1800   // se usa solo si Salud no manda la energía en reposo
 const FALLBACK = 2200
 
 const DIAS = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB']
@@ -49,12 +49,30 @@ let registro     = JSON.parse(localStorage.getItem('registroComidas')     || '{}
 let regEjercicio = JSON.parse(localStorage.getItem('registroEjercicio')   || '{}')
 
 let actividadAH  = 0
+let reposoAH     = 0     // energía en reposo acumulada hoy (Apple Health)
+let reposoHoraAH = ''    // hora en que el Atajo mandó ese dato (HH:mm)
 let ultimaSyncAH = null
 let estadoAH     = 'cargando'
 let gastadas     = FALLBACK
 
+/* Basal del día completo a partir de la energía en reposo de Apple Health.
+   El dato es lo acumulado hasta la hora del envío, así que se proyecta a 24 h.
+   Antes de las 6:00 hay muy poco dato para proyectar: se usa BASAL. */
+function basalDelDia() {
+  if (!(reposoAH > 0) || !/^\d{1,2}:\d{2}$/.test(reposoHoraAH)) return { valor: BASAL, real: false }
+  const [h, m] = reposoHoraAH.split(':').map(Number)
+  const minutos = h * 60 + m
+  if (minutos < 360) return { valor: BASAL, real: false }
+  const proyectado = Math.round(reposoAH * 1440 / minutos)
+  if (proyectado < 1000 || proyectado > 3500) return { valor: BASAL, real: false }
+  return { valor: proyectado, real: true }
+}
+
 function recalcularGastadas() {
-  gastadas = actividadAH > 0 ? BASAL + actividadAH + ejercicio : FALLBACK + ejercicio
+  const basal = basalDelDia()
+  gastadas = (actividadAH > 0 || basal.real)
+    ? basal.valor + actividadAH + ejercicio
+    : FALLBACK + ejercicio
 }
 
 function mostrarFecha() {
@@ -73,6 +91,8 @@ function verificarCambioDeDia() {
     consumidas = 0
     ejercicio  = 0
     actividadAH = 0
+    reposoAH = 0
+    reposoHoraAH = ''
     ultimaSyncAH = null
     localStorage.setItem('consumidas', '0')
     localStorage.setItem('ejercicio',  '0')
@@ -411,6 +431,14 @@ function actualizarCardAH() {
   valEl.textContent  = actividadAH > 0 ? actividadAH : '—'
   syncEl.textContent = tiempoDesdeSync()
 
+  const basalEl = document.getElementById('ah-basal')
+  if (basalEl) {
+    const b = basalDelDia()
+    basalEl.textContent = b.real
+      ? `Basal ${b.valor} kcal (Salud, proyectado al día)`
+      : `Basal ${BASAL} kcal (estimado fijo)`
+  }
+
   dotEl.className = 'ah-dot'
   if (estadoAH === 'cargando') {
     dotEl.classList.add('loading')
@@ -425,8 +453,6 @@ function actualizarCardAH() {
     txtEl.textContent = 'Sin conexión'
   }
 
-  const atajoBtn = document.getElementById('ah-atajo')
-  if (atajoBtn) atajoBtn.style.display = estadoAH === 'ok' ? 'none' : ''
 }
 
 let cargandoAH = false
@@ -447,8 +473,10 @@ async function cargarAppleHealth() {
     const actividad = Math.round(Number(data.calorias) || 0)
 
     actividadAH  = actividad
+    reposoAH     = Math.round(Number(data.reposo) || 0)
+    reposoHoraAH = String(data.reposoHora || '')
     ultimaSyncAH = new Date()
-    estadoAH     = actividad > 0 ? 'ok' : 'sin-datos'
+    estadoAH     = (actividad > 0 || reposoAH > 0) ? 'ok' : 'sin-datos'
   } catch (e) {
     estadoAH = 'error'
     console.log('Error Apple Health', e)
