@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080808">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <div class="app">
@@ -63,7 +63,10 @@
           <span class="ah-unit">kcal activas hoy</span>
         </div>
         <div class="ah-sync" id="ah-sync">—</div>
-        <button class="ah-atajo" id="ah-atajo" onclick="ejecutarAtajo()">Enviar datos de Salud ahora</button>
+        <div id="ah-atajo">
+          <button class="ah-atajo" onclick="ejecutarAtajo()">Enviar datos de Salud ahora</button>
+          <button class="ah-atajo-cfg" onclick="configurarAtajo()">Cambiar nombre del Atajo</button>
+        </div>
       </div>
 
       <button class="foto-btn" onclick="document.getElementById('camInput').click()">
@@ -211,7 +214,7 @@
     <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
   </div>
 </div>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg && reg.update()).catch(() => {})

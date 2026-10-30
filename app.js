@@ -462,10 +462,27 @@ async function cargarAppleHealth() {
   actualizarCardAH()
 }
 
-/* Ejecuta el Atajo de iOS y vuelve a la app al terminar */
+/* Ejecuta el Atajo de iOS. Al volver a la app (deslizando), visibilitychange reconsulta Salud.
+   No se usa x-success: en iOS abre Safari en lugar de la app instalada. */
+function nombreAtajo() {
+  try { return localStorage.getItem('atajoNombre') || '' } catch { return '' }
+}
+
+function configurarAtajo() {
+  const actual = nombreAtajo() || ATAJO_NOMBRE
+  const nombre = prompt('Nombre EXACTO de tu Atajo de Salud (como figura en la app Atajos):', actual)
+  if (nombre === null) return null
+  const limpio = nombre.trim()
+  if (!limpio) return null
+  try { localStorage.setItem('atajoNombre', limpio) } catch {}
+  return limpio
+}
+
 function ejecutarAtajo() {
-  const volver = encodeURIComponent(location.href.split('#')[0] + '#ah')
-  location.href = `shortcuts://x-callback-url/run-shortcut?name=${encodeURIComponent(ATAJO_NOMBRE)}&x-success=${volver}`
+  const nombre = nombreAtajo() || configurarAtajo()
+  if (!nombre) return
+  toast(`Abriendo Atajo "${nombre}"… después volvé a Balance`)
+  location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(nombre)}`
 }
 
 /* ══════════════════════════════════════
