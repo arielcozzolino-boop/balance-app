@@ -167,6 +167,12 @@ body::after {
 .ah-refresh svg { width: 14px; height: 14px; }
 .ah-refresh.spinning svg { animation: ahSpin 0.7s linear infinite; }
 @keyframes ahSpin { to { transform: rotate(360deg); } }
+.ah-atajo {
+  margin-top: 10px; width: 100%; padding: 9px 12px;
+  background: var(--s3); color: var(--text); border: none; border-radius: 10px;
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+.ah-atajo:active { transform: scale(0.98); }
 
 /* ── FOTO BTN ── */
 .foto-btn {
