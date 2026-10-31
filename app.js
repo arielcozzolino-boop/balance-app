@@ -232,34 +232,112 @@ function toggleFilled(wrapId, input) {
   document.getElementById(wrapId).classList.toggle('filled', input.value.trim() !== '')
 }
 
+/* ── Selector de día (hoy y los 6 anteriores) ── */
+const HORA_TURNO = { Desayuno: '08:00', Almuerzo: '13:00', Merienda: '17:00', Cena: '21:00', Extra: '23:00' }
+
+function llenarSelectorDias() {
+  const sel = document.getElementById('sel-dia')
+  if (!sel) return
+  const base = new Date()
+  let html = ''
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i)
+    const etiqueta = i === 0 ? 'Hoy' : i === 1 ? 'Ayer' : d.toLocaleDateString('es-AR', { weekday: 'long' })
+    const corto = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric' })
+    html += `<option value="${fechaLocal(d)}">${etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1)} · ${corto}</option>`
+  }
+  sel.innerHTML = html
+}
+
+/* ── Estimación local de calorías (alimentos.js) ── */
+let calEditadaAMano = false
+
+function actualizarEstimacion() {
+  const box   = document.getElementById('estim')
+  const texto = document.getElementById('inp-comida').value
+  if (!box || typeof estimarCalorias !== 'function') return
+  if (texto.trim().length < 3) { box.hidden = true; return }
+
+  const r = estimarCalorias(texto)
+  if (!r.items.length) {
+    box.hidden = false
+    box.innerHTML = 'No lo encontré en la tabla. Cargá las calorías a mano.'
+    return
+  }
+  const detalle = r.items.map(i => `${esc(i.nombre)} (${esc(i.cantidad)}) ${i.kcal}`).join(' + ')
+  const warn = r.sinReconocer.length
+    ? `<div class="estim-warn">Sin reconocer: ${esc(r.sinReconocer.join(', '))} — sumalo a mano si hace falta.</div>` : ''
+  box.hidden = false
+  box.innerHTML = `≈ <b>${r.total} kcal</b> · ${detalle}${warn}`
+
+  if (!calEditadaAMano) {
+    const inp = document.getElementById('inp-cal')
+    inp.value = r.total
+    toggleFilled('wrap-cal', inp)
+  }
+}
+
+function limpiarFormComida() {
+  document.getElementById('inp-comida').value = ''
+  document.getElementById('inp-cal').value    = ''
+  document.getElementById('wrap-comida').classList.remove('filled')
+  document.getElementById('wrap-cal').classList.remove('filled')
+  const box = document.getElementById('estim'); if (box) box.hidden = true
+  calEditadaAMano = false
+  llenarSelectorDias()
+  document.getElementById('sel-turno').value = ''
+}
+
 async function agregarManual() {
   verificarCambioDeDia()
   const n = document.getElementById('inp-comida').value.trim()
   const c = parseInt(document.getElementById('inp-cal').value)
   if (!n || isNaN(c) || c <= 0) { toast('Completa los campos'); return }
 
-  const hora  = horaActual()
-  const turno = getTurno(hora)
+  const fecha    = document.getElementById('sel-dia')?.value || hoy
+  const turnoSel = document.getElementById('sel-turno')?.value || ''
+  const esHoy    = fecha === hoy
 
-  consumidas += c
-  if (!registro[hoy]) registro[hoy] = []
-  registro[hoy].push({ comida: n, calorias: c, hora, turno })
+  if (!esHoy && !turnoSel) { toast('Elegí el momento (Desayuno, Cena…)'); return }
+
+  const hora  = esHoy && !turnoSel ? horaActual() : (turnoSel ? HORA_TURNO[turnoSel] : horaActual())
+  const turno = turnoSel || getTurno(hora)
+
+  if (!registro[fecha]) registro[fecha] = []
+  registro[fecha].push({ comida: n, calorias: c, hora, turno })
   localStorage.setItem('registroComidas', JSON.stringify(registro))
 
-  document.getElementById('inp-comida').value = ''
-  document.getElementById('inp-cal').value    = ''
-  document.getElementById('wrap-comida').classList.remove('filled')
-  document.getElementById('wrap-cal').classList.remove('filled')
-
-  calcular()
+  let consTotal, gasTotal
+  if (esHoy) {
+    consumidas += c
+    calcular()
+    consTotal = consumidas; gasTotal = gastadas
+  } else {
+    // Día anterior: se suma a lo que ya tenía ese día, con el gasto que quedó guardado
+    const d = historial[fecha] || { consumidas: 0, gastadas: FALLBACK }
+    d.consumidas = (d.consumidas || 0) + c
+    d.gastadas   = d.gastadas || FALLBACK
+    d.balance    = d.consumidas - d.gastadas
+    historial[fecha] = d
+    localStorage.setItem('historial', JSON.stringify(historial))
+    consTotal = d.consumidas; gasTotal = d.gastadas
+  }
 
   syncSheet({
-    type: 'comida', fecha: hoy, comida: n, calorias: c, hora, turno,
-    consumidasTotal: consumidas, gastadasTotal: gastadas, balance: consumidas - gastadas
+    type: 'comida', fecha, comida: n, calorias: c, hora, turno,
+    consumidasTotal: consTotal, gastadasTotal: gasTotal, balance: consTotal - gasTotal
   })
 
-  toast(`${turno} · ${n} — ${c} kcal`)
-  go('hoy', document.querySelectorAll('.nav-btn')[0])
+  limpiarFormComida()
+
+  if (esHoy) {
+    toast(`${turno} · ${n} — ${c} kcal`)
+    go('hoy', document.querySelectorAll('.nav-btn')[0])
+  } else {
+    const dia = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' })
+    toast(`Sumado a ${dia} · ${turno} — ${c} kcal`)
+    go('historial', document.querySelectorAll('.nav-btn')[3])
+  }
 }
 
 /* ══════════════════════════════════════
@@ -652,10 +730,11 @@ document.getElementById('inp-kcal-ejercicio').addEventListener('keydown', e => {
 /* Al volver a la app (p. ej. después del Atajo) se revisa el día y se reconsulta Salud */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return
-  if (verificarCambioDeDia()) calcular()
+  if (verificarCambioDeDia()) { llenarSelectorDias(); calcular() }
   cargarAppleHealth()
 })
 
+llenarSelectorDias()
 calcular()
 cargarAppleHealth()
 setInterval(cargarAppleHealth, 300000)

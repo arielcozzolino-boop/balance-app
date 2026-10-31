@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080808">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <div class="app">
@@ -101,15 +101,33 @@
       </div>
 
       <div class="form-group">
-        <div class="inp-wrap" id="wrap-comida">
-          <label class="inp-label">Alimento</label>
-          <input class="inp" id="inp-comida" type="text" autocomplete="off"
-            oninput="toggleFilled('wrap-comida',this)"/>
+        <div class="sel-row">
+          <div class="inp-wrap filled">
+            <label class="inp-label">Día</label>
+            <select class="inp inp-select" id="sel-dia"></select>
+          </div>
+          <div class="inp-wrap filled">
+            <label class="inp-label">Momento</label>
+            <select class="inp inp-select" id="sel-turno">
+              <option value="">Según la hora</option>
+              <option>Desayuno</option>
+              <option>Almuerzo</option>
+              <option>Merienda</option>
+              <option>Cena</option>
+              <option>Extra</option>
+            </select>
+          </div>
         </div>
+        <div class="inp-wrap" id="wrap-comida">
+          <label class="inp-label">¿Qué comiste? (ej: 2 empanadas y una coca)</label>
+          <input class="inp" id="inp-comida" type="text" autocomplete="off"
+            oninput="toggleFilled('wrap-comida',this);actualizarEstimacion()"/>
+        </div>
+        <div class="estim" id="estim" hidden></div>
         <div class="inp-wrap" id="wrap-cal">
           <label class="inp-label">Calorías (kcal)</label>
           <input class="inp" id="inp-cal" type="number" inputmode="numeric"
-            oninput="toggleFilled('wrap-cal',this)"/>
+            oninput="toggleFilled('wrap-cal',this);calEditadaAMano=true"/>
         </div>
         <button class="btn-add" onclick="agregarManual()">Agregar comida</button>
       </div>
@@ -215,7 +233,8 @@
     <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
   </div>
 </div>
-<script src="app.js?v=15"></script>
+<script src="alimentos.js?v=16"></script>
+<script src="app.js?v=16"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg && reg.update()).catch(() => {})
