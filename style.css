@@ -438,3 +438,76 @@ body::after {
   transition: transform 0.15s, opacity 0.15s;
 }
 .fm-confirm-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+/* ── PLAN ── */
+.plan-week { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.plan-week-txt { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.plan-week-txt a { color: var(--text); text-decoration: underline; cursor: pointer; }
+.plan-arrow {
+  width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid var(--border2);
+  background: var(--s1); color: var(--text); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.plan-chips { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 14px; }
+.plan-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 7px; border-radius: 12px; border: 0.5px solid var(--border);
+  background: var(--s1); color: var(--muted); font-family: inherit; cursor: pointer;
+}
+.plan-chip.hoy { border-color: var(--border2); color: var(--text); }
+.plan-chip.sel { background: var(--text); color: #080808; border-color: var(--text); }
+.pc-d { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; }
+.pc-n { font-size: 16px; font-weight: 700; }
+.pc-dots { font-size: 6px; letter-spacing: 1px; opacity: 0.8; }
+.pc-k { font-size: 8px; opacity: 0.7; }
+.plan-sum {
+  background: var(--s1); border: 0.5px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; margin-bottom: 12px; font-size: 12px; color: var(--muted);
+}
+.ps-big { font-size: 22px; font-weight: 800; color: var(--text); }
+.ps-sub { margin-top: 4px; font-size: 11px; }
+.ps-sub b { color: var(--text); }
+.ps-sub b.warn { color: var(--red); }
+.plan-meal {
+  position: relative; background: var(--s1); border: 0.5px solid var(--border);
+  border-radius: 16px; padding: 14px 14px 12px 18px; margin-bottom: 10px; overflow: hidden;
+}
+.plan-meal::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--mc); }
+.plan-meal.done { opacity: 0.72; }
+.pm-head { display: flex; align-items: baseline; gap: 8px; }
+.pm-name { font-size: 15px; font-weight: 800; }
+.pm-hora { font-size: 11px; color: var(--muted); }
+.pm-kcal { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--text); }
+.pm-alt { font-size: 10px; color: var(--yellow); margin-top: 4px; }
+.pm-red {
+  display: inline-block; margin-top: 6px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--red); background: rgba(248,113,113,0.12); padding: 2px 7px; border-radius: 6px;
+}
+.pm-items { list-style: none; margin: 8px 0 10px; padding: 0; }
+.pm-items li { font-size: 12px; color: #bdbdbd; line-height: 1.45; padding-left: 12px; position: relative; }
+.pm-items li::before { content: '·'; position: absolute; left: 2px; color: var(--muted); }
+.pm-actions { display: flex; gap: 8px; align-items: center; }
+.pm-btn {
+  flex: 1; padding: 10px; border-radius: 11px; border: none; cursor: pointer;
+  background: var(--text); color: #080808; font-family: inherit; font-size: 12px; font-weight: 700;
+}
+.pm-btn.ghost { background: var(--s3); color: var(--text); }
+.pm-btn:active { transform: scale(0.97); }
+.pm-done { flex: 1; font-size: 12px; font-weight: 700; color: var(--green); }
+.plan-info {
+  background: var(--s1); border: 0.5px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; margin-top: 10px; font-size: 12px; color: #bdbdbd; line-height: 1.5;
+}
+.plan-info summary { cursor: pointer; font-weight: 700; color: var(--text); font-size: 13px; }
+.plan-info ul { margin: 8px 0 0 16px; padding: 0; }
+.plan-info p { margin-top: 8px; }
+.alt-card { max-height: 82vh; display: flex; flex-direction: column; }
+.alt-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.alt-opt {
+  text-align: left; background: var(--s2); border: 0.5px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; color: var(--text); font-family: inherit; cursor: pointer;
+}
+.alt-opt.sel { border-color: var(--green); }
+.ao-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.ao-top span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.ao-items { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.nav-btn { font-size: 8.5px; }
