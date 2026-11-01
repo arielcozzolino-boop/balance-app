@@ -142,10 +142,12 @@ function getTurno(hora) {
    NAVEGACION
 ══════════════════════════════════════ */
 function go(id, btn) {
+  btn = btn || document.querySelector(`.nav-btn[data-nav="${id}"]`)
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById('s-' + id).classList.add('active')
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
-  btn.classList.add('active')
+  if (btn) btn.classList.add('active')
+  if (id === 'plan' && typeof renderPlan === 'function') renderPlan()
   if (id === 'progreso')  dibujarGrafico()
   if (id === 'historial') renderHistorial()
 }
@@ -288,6 +290,52 @@ function limpiarFormComida() {
   document.getElementById('sel-turno').value = ''
 }
 
+/* Registra una comida en un día (hoy o anterior), actualiza totales y la planilla.
+   Devuelve el id del registro (sirve para deshacer). */
+function registrarComida({ fecha, comida, calorias, turno, hora }) {
+  fecha = fecha || hoy
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  if (!registro[fecha]) registro[fecha] = []
+  registro[fecha].push({ id, comida, calorias, hora, turno })
+  localStorage.setItem('registroComidas', JSON.stringify(registro))
+  const tot = sumarAlDia(fecha, calorias)
+  syncSheet({
+    type: 'comida', fecha, comida, calorias, hora, turno,
+    consumidasTotal: tot.consumidas, gastadasTotal: tot.gastadas, balance: tot.consumidas - tot.gastadas
+  })
+  return id
+}
+
+/* Quita una comida registrada. En la planilla queda un registro de anulación (kcal negativas). */
+function quitarComida(fecha, id) {
+  const lista = registro[fecha] || []
+  const i = lista.findIndex(e => e.id === id)
+  if (i < 0) return false
+  const [e] = lista.splice(i, 1)
+  localStorage.setItem('registroComidas', JSON.stringify(registro))
+  const tot = sumarAlDia(fecha, -e.calorias)
+  syncSheet({
+    type: 'comida', fecha, comida: '(anulado) ' + e.comida, calorias: -e.calorias, hora: e.hora, turno: e.turno,
+    consumidasTotal: tot.consumidas, gastadasTotal: tot.gastadas, balance: tot.consumidas - tot.gastadas
+  })
+  return true
+}
+
+function sumarAlDia(fecha, kcal) {
+  if (fecha === hoy) {
+    consumidas = Math.max(0, consumidas + kcal)
+    calcular()
+    return { consumidas, gastadas }
+  }
+  const d = historial[fecha] || { consumidas: 0, gastadas: FALLBACK }
+  d.consumidas = Math.max(0, (d.consumidas || 0) + kcal)
+  d.gastadas   = d.gastadas || FALLBACK
+  d.balance    = d.consumidas - d.gastadas
+  historial[fecha] = d
+  localStorage.setItem('historial', JSON.stringify(historial))
+  return { consumidas: d.consumidas, gastadas: d.gastadas }
+}
+
 async function agregarManual() {
   verificarCambioDeDia()
   const n = document.getElementById('inp-comida').value.trim()
@@ -303,40 +351,18 @@ async function agregarManual() {
   const hora  = esHoy && !turnoSel ? horaActual() : (turnoSel ? HORA_TURNO[turnoSel] : horaActual())
   const turno = turnoSel || getTurno(hora)
 
-  if (!registro[fecha]) registro[fecha] = []
-  registro[fecha].push({ comida: n, calorias: c, hora, turno })
-  localStorage.setItem('registroComidas', JSON.stringify(registro))
-
-  let consTotal, gasTotal
-  if (esHoy) {
-    consumidas += c
-    calcular()
-    consTotal = consumidas; gasTotal = gastadas
-  } else {
-    // Día anterior: se suma a lo que ya tenía ese día, con el gasto que quedó guardado
-    const d = historial[fecha] || { consumidas: 0, gastadas: FALLBACK }
-    d.consumidas = (d.consumidas || 0) + c
-    d.gastadas   = d.gastadas || FALLBACK
-    d.balance    = d.consumidas - d.gastadas
-    historial[fecha] = d
-    localStorage.setItem('historial', JSON.stringify(historial))
-    consTotal = d.consumidas; gasTotal = d.gastadas
-  }
-
-  syncSheet({
-    type: 'comida', fecha, comida: n, calorias: c, hora, turno,
-    consumidasTotal: consTotal, gastadasTotal: gasTotal, balance: consTotal - gasTotal
-  })
+  const idReg = registrarComida({ fecha, comida: n, calorias: c, turno, hora })
+  if (typeof planTrasCargaManual === 'function') planTrasCargaManual(fecha, turno, idReg, c)
 
   limpiarFormComida()
 
   if (esHoy) {
     toast(`${turno} · ${n} — ${c} kcal`)
-    go('hoy', document.querySelectorAll('.nav-btn')[0])
+    go('hoy')
   } else {
     const dia = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' })
     toast(`Sumado a ${dia} · ${turno} — ${c} kcal`)
-    go('historial', document.querySelectorAll('.nav-btn')[3])
+    go('historial')
   }
 }
 
@@ -372,7 +398,7 @@ async function agregarEjercicio() {
   })
 
   toast(`${act} — ${kcal} kcal quemadas`)
-  go('hoy', document.querySelectorAll('.nav-btn')[0])
+  go('hoy')
 }
 
 /* ══════════════════════════════════════
@@ -482,7 +508,7 @@ async function confirmarFotoItems() {
   const total = validos.reduce((s, i) => s + i.calorias, 0)
   const label = validos.length > 1 ? `${validos.length} ítems` : validos[0].comida
   toast(`${turno} · ${label} — ${total} kcal`)
-  go('hoy', document.querySelectorAll('.nav-btn')[0])
+  go('hoy')
 }
 
 /* ══════════════════════════════════════
