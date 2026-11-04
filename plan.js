@@ -319,3 +319,16 @@ function planComiOtra() {
   document.getElementById('inp-comida').focus()
   toast(`Cargá lo que comiste en ${PLAN_COMIDAS[ci].nombre.toLowerCase()}`)
 }
+
+/* Llamado desde app.js cuando se edita (kcal) o borra (null) un registro */
+function planActualizarRegistro(fecha, id, kcal) {
+  const dia = planHechas[fecha]
+  if (!dia) return
+  for (const k of Object.keys(dia)) {
+    if (dia[k].id !== id) continue
+    if (kcal === null) delete dia[k]
+    else dia[k].kcal = kcal
+  }
+  if (!Object.keys(dia).length) delete planHechas[fecha]
+  _guardar()
+}

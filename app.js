@@ -217,9 +217,9 @@ function renderRegistro() {
     html += `<div class="turno-label">${TURNO_EMOJI[turno]} ${turno}</div>`
     grupos[turno].forEach((item, i) => {
       html += `
-        <div class="registro-item" style="animation-delay:${i * 0.05}s">
+        <div class="registro-item editable" style="animation-delay:${i * 0.05}s" onclick="abrirEditar('${hoy}','${item.id}')">
           <span class="r-name">${esc(item.comida)}</span>
-          <span class="r-cal">${esc(item.calorias)} kcal</span>
+          <span class="r-cal">${esc(item.calorias)} kcal <span class="r-edit">✎</span></span>
         </div>`
     })
   })
@@ -313,11 +313,45 @@ function quitarComida(fecha, id) {
   if (i < 0) return false
   const [e] = lista.splice(i, 1)
   localStorage.setItem('registroComidas', JSON.stringify(registro))
+  if (typeof planActualizarRegistro === 'function') planActualizarRegistro(fecha, id, null)
   const tot = sumarAlDia(fecha, -e.calorias)
   syncSheet({
     type: 'comida', fecha, comida: '(anulado) ' + e.comida, calorias: -e.calorias, hora: e.hora, turno: e.turno,
     consumidasTotal: tot.consumidas, gastadasTotal: tot.gastadas, balance: tot.consumidas - tot.gastadas
   })
+  return true
+}
+
+/* Los registros viejos no tenían id: se les asigna uno para poder editarlos */
+function asegurarIds() {
+  let cambio = false
+  Object.keys(registro).forEach(f => (registro[f] || []).forEach(e => {
+    if (!e.id) { e.id = 'r' + Math.random().toString(36).slice(2, 10); cambio = true }
+  }))
+  if (cambio) localStorage.setItem('registroComidas', JSON.stringify(registro))
+}
+
+/* Corrige una comida ya registrada. En la planilla queda una línea de corrección con la diferencia. */
+function editarComida(fecha, id, cambios) {
+  const e = (registro[fecha] || []).find(x => x.id === id)
+  if (!e) return false
+  const antes = { ...e }
+  const nuevasKcal = Math.round(Number(cambios.calorias))
+  e.comida   = cambios.comida.trim() || e.comida
+  e.calorias = nuevasKcal
+  e.turno    = cambios.turno || e.turno
+  localStorage.setItem('registroComidas', JSON.stringify(registro))
+
+  const delta = nuevasKcal - antes.calorias
+  const tot = sumarAlDia(fecha, delta)
+  if (delta !== 0) {
+    syncSheet({
+      type: 'comida', fecha, turno: e.turno, hora: e.hora,
+      comida: `(corrección) ${e.comida} ${antes.calorias}→${nuevasKcal}`, calorias: delta,
+      consumidasTotal: tot.consumidas, gastadasTotal: tot.gastadas, balance: tot.consumidas - tot.gastadas
+    })
+  }
+  if (typeof planActualizarRegistro === 'function') planActualizarRegistro(fecha, id, nuevasKcal)
   return true
 }
 
@@ -334,6 +368,54 @@ function sumarAlDia(fecha, kcal) {
   historial[fecha] = d
   localStorage.setItem('historial', JSON.stringify(historial))
   return { consumidas: d.consumidas, gastadas: d.gastadas }
+}
+
+/* ── Hoja "Editar comida" ── */
+let _editCtx = null
+let _confirmarBorrado = false
+
+function abrirEditar(fecha, id) {
+  const e = (registro[fecha] || []).find(x => x.id === id)
+  if (!e) { toast('No encontré esa comida'); return }
+  _editCtx = { fecha, id }
+  _confirmarBorrado = false
+  const dia = fecha === hoy ? 'hoy' : new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' })
+  document.getElementById('ed-sub').textContent = `${dia} · ${e.hora || ''}`
+  document.getElementById('ed-comida').value = e.comida
+  document.getElementById('ed-cal').value = e.calorias
+  document.getElementById('ed-turno').value = e.turno || getTurno(e.hora || '12:00')
+  const b = document.getElementById('ed-borrar'); b.textContent = 'Eliminar comida'; b.classList.remove('armed')
+  document.getElementById('edit-modal').classList.add('active')
+}
+
+function cerrarEditar() { document.getElementById('edit-modal').classList.remove('active'); _editCtx = null }
+
+function _refrescarVistas() {
+  renderRegistro()
+  if (document.getElementById('s-historial')?.classList.contains('active')) renderHistorial()
+  if (document.getElementById('s-progreso')?.classList.contains('active')) dibujarGrafico()
+  if (document.getElementById('s-plan')?.classList.contains('active') && typeof renderPlan === 'function') renderPlan()
+}
+
+function guardarEdicion() {
+  if (!_editCtx) return
+  const comida = document.getElementById('ed-comida').value
+  const kcal = parseInt(document.getElementById('ed-cal').value)
+  if (!comida.trim() || isNaN(kcal) || kcal <= 0) { toast('Completá alimento y calorías'); return }
+  editarComida(_editCtx.fecha, _editCtx.id, { comida, calorias: kcal, turno: document.getElementById('ed-turno').value })
+  cerrarEditar()
+  _refrescarVistas()
+  toast('Comida corregida')
+}
+
+function borrarDesdeEdicion() {
+  if (!_editCtx) return
+  const b = document.getElementById('ed-borrar')
+  if (!_confirmarBorrado) { _confirmarBorrado = true; b.textContent = 'Tocá otra vez para eliminar'; b.classList.add('armed'); return }
+  quitarComida(_editCtx.fecha, _editCtx.id)
+  cerrarEditar()
+  _refrescarVistas()
+  toast('Comida eliminada')
 }
 
 async function agregarManual() {
@@ -702,9 +784,9 @@ function renderHistorial() {
       comidasHtml += `<div class="hist-turno">${TURNO_EMOJI[turno]} ${turno}</div>`
       del.forEach(c => {
         comidasHtml += `
-          <div class="hist-comida-row">
+          <div class="hist-comida-row editable" onclick="abrirEditar('${k}','${c.id}')">
             <span>${esc(c.comida)}</span>
-            <span class="r-cal">${esc(c.calorias)} kcal</span>
+            <span class="r-cal">${esc(c.calorias)} kcal <span class="r-edit">✎</span></span>
           </div>`
       })
     })
@@ -760,6 +842,7 @@ document.addEventListener('visibilitychange', () => {
   cargarAppleHealth()
 })
 
+asegurarIds()
 llenarSelectorDias()
 calcular()
 cargarAppleHealth()
