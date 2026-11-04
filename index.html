@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080808">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 <div class="app">
@@ -227,6 +227,31 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ── EDITAR COMIDA ── -->
+<div class="foto-modal" id="edit-modal">
+  <div class="foto-modal-bg" onclick="cerrarEditar()"></div>
+  <div class="foto-modal-card">
+    <div class="fm-header">
+      <div class="fm-title">Editar comida</div>
+      <button class="fm-close" onclick="cerrarEditar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fm-hint" id="ed-sub"></div>
+    <div class="form-group" style="animation:none">
+      <div class="inp-wrap filled"><label class="inp-label">Alimento</label><input class="inp" id="ed-comida" type="text" autocomplete="off"/></div>
+      <div class="sel-row">
+        <div class="inp-wrap filled"><label class="inp-label">Calorías (kcal)</label><input class="inp" id="ed-cal" type="number" inputmode="numeric"/></div>
+        <div class="inp-wrap filled"><label class="inp-label">Momento</label>
+          <select class="inp inp-select" id="ed-turno"><option>Desayuno</option><option>Almuerzo</option><option>Merienda</option><option>Cena</option><option>Extra</option></select>
+        </div>
+      </div>
+    </div>
+    <button class="fm-confirm-btn" onclick="guardarEdicion()">Guardar cambios</button>
+    <button class="ed-borrar" id="ed-borrar" onclick="borrarDesdeEdicion()">Eliminar comida</button>
+  </div>
+</div>
+
 <!-- ── CAMBIAR COMIDA DEL PLAN ── -->
 <div class="foto-modal" id="alt-modal">
   <div class="foto-modal-bg" onclick="planCerrarCambio()"></div>
@@ -262,9 +287,9 @@
     <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
   </div>
 </div>
-<script src="alimentos.js?v=17"></script>
-<script src="app.js?v=17"></script>
-<script src="plan.js?v=17"></script>
+<script src="alimentos.js?v=18"></script>
+<script src="app.js?v=18"></script>
+<script src="plan.js?v=18"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg && reg.update()).catch(() => {})
