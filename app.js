@@ -18,6 +18,10 @@ const ATAJO_NOMBRE  = 'Balance Health'
 /* Criterio de gasto (revisar antes de cambiar):
    - con datos de Apple Health: BASAL + activas AH + ejercicio manual
    - sin datos:                 FALLBACK + ejercicio manual             */
+/* Meta de comida del plan de la nutricionista */
+const META_MIN = 1600
+const META_MAX = 1800
+
 const BASAL    = 1800   // se usa solo si Salud no manda la energía en reposo
 const FALLBACK = 2200
 
@@ -182,6 +186,7 @@ function calcular() {
   arc.closest('svg').style.filter = `drop-shadow(0 0 18px ${glow})`
 
   document.getElementById('stat-con').innerHTML = consumidas + '<span class="s-unit">kcal</span>'
+  actualizarMeta()
   document.getElementById('stat-gas').innerHTML = gastadas   + '<span class="s-unit">kcal</span>'
 
   localStorage.setItem('consumidas', consumidas)
@@ -189,6 +194,34 @@ function calcular() {
   localStorage.setItem('historial', JSON.stringify(historial))
 
   renderRegistro()
+}
+
+/* Tarjeta "Plan del día": cuánto falta para la meta de comida */
+function estadoMeta(cons) {
+  if (cons < META_MIN) return 'bajo'
+  if (cons <= META_MAX) return 'rango'
+  return 'alto'
+}
+
+function fmtNum(n) { return Math.round(n).toLocaleString('es-AR') }
+
+function actualizarMeta() {
+  const fill = document.getElementById('meta-fill')
+  const txt  = document.getElementById('meta-txt')
+  if (!fill || !txt) return
+  const tope = META_MAX * 1.25
+  const band = document.querySelector('#meta-card .meta-band')
+  if (band) { band.style.left = (META_MIN / tope * 100) + '%'; band.style.width = ((META_MAX - META_MIN) / tope * 100) + '%' }
+  fill.style.width = Math.min(consumidas / tope, 1) * 100 + '%'
+  const e = estadoMeta(consumidas)
+  fill.className = 'meta-fill ' + e
+  if (e === 'bajo') {
+    txt.innerHTML = `Te quedan <b>${fmtNum(META_MIN - consumidas)} – ${fmtNum(META_MAX - consumidas)} kcal</b> para cumplir el plan`
+  } else if (e === 'rango') {
+    txt.innerHTML = `<b class="ok">En rango ✓</b> · margen de ${fmtNum(META_MAX - consumidas)} kcal hasta el máximo`
+  } else {
+    txt.innerHTML = `<b class="over">Te pasaste ${fmtNum(consumidas - META_MAX)} kcal</b> del máximo del plan`
+  }
 }
 
 /* ══════════════════════════════════════
@@ -709,50 +742,127 @@ function ultimas7Claves() {
 function dibujarGrafico() {
   const bars  = document.getElementById('chart-bars')
   const stats = document.getElementById('prog-stats')
+  const nota  = document.getElementById('prog-nota')
   const keys  = ultimas7Claves()
+  renderPeso()
 
   if (!keys.length) {
     bars.innerHTML  = '<div class="empty-state" style="width:100%;text-align:center">Sin datos aún</div>'
     stats.innerHTML = ''
+    if (nota) nota.textContent = ''
     return
   }
 
-  const valores  = keys.map(k => historial[k]?.balance || 0)
-  const maxVal   = Math.max(...valores.map(Math.abs), 1)
-  const promedio = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length)
-  const minVal   = Math.min(...valores)
-  const mejorDia = keys[valores.indexOf(minVal)]
+  const valores = keys.map(k => historial[k]?.balance || 0)
+  const maxVal  = Math.max(...valores.map(Math.abs), 1)
 
   bars.innerHTML = keys.map((k, i) => {
-    const b    = historial[k]?.balance || 0
-    const h    = Math.max((Math.abs(b) / maxVal) * 110, 3)
-    const col  = colorBalance(b).color
-    const dayN = DIAS[new Date(k + 'T12:00:00').getDay()]
+    const b       = historial[k]?.balance || 0
+    const h       = Math.max((Math.abs(b) / maxVal) * 110, 3)
+    const col     = colorBalance(b).color
+    const parcial = k === hoy
+    const dayN    = parcial ? 'HOY' : DIAS[new Date(k + 'T12:00:00').getDay()]
     return `
-      <div class="bar-col">
+      <div class="bar-col ${parcial ? 'parcial' : ''}">
         <div class="b-val">${b > 0 ? '+' : ''}${b}</div>
         <div class="b" style="height:${h}px;background:${col};animation-delay:${i*0.07}s"></div>
         <div class="b-day">${dayN}</div>
       </div>`
   }).join('')
 
-  const mejorFecha = mejorDia
-    ? new Date(mejorDia + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
-    : '—'
+  // Estadísticas: solo días terminados (hoy no entra)
+  const cerrados = keys.filter(k => k !== hoy)
+  if (!cerrados.length) {
+    stats.innerHTML = ''
+    if (nota) nota.textContent = 'Todavía no hay días terminados para promediar.'
+    return
+  }
+  const prom = arr => Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+  const promBal  = prom(cerrados.map(k => historial[k]?.balance || 0))
+  const promCons = prom(cerrados.map(k => historial[k]?.consumidas || 0))
+  const est = { bajo: 0, rango: 0, alto: 0 }
+  cerrados.forEach(k => { est[estadoMeta(historial[k]?.consumidas || 0)]++ })
 
   stats.innerHTML = `
     <div class="prog-stat">
-      <div class="ps-label">Promedio</div>
-      <div class="ps-val" style="color:${colorBalance(promedio).color}">${promedio>0?'+':''}${promedio}</div>
+      <div class="ps-label">Balance prom.</div>
+      <div class="ps-val" style="color:${colorBalance(promBal).color}">${promBal>0?'+':''}${fmtNum(promBal)}</div>
     </div>
     <div class="prog-stat">
-      <div class="ps-label">Mejor día</div>
-      <div class="ps-val" style="color:#4ade80;font-size:11px">${mejorFecha}</div>
+      <div class="ps-label">Comida prom.</div>
+      <div class="ps-val" style="color:${estadoMeta(promCons)==='rango' ? '#4ade80' : '#facc15'}">${fmtNum(promCons)}</div>
     </div>
     <div class="prog-stat">
-      <div class="ps-label">Días reg.</div>
-      <div class="ps-val">${keys.length}</div>
+      <div class="ps-label">En rango</div>
+      <div class="ps-val">${est.rango}<span class="ps-de"> de ${cerrados.length}</span></div>
     </div>`
+
+  if (nota) {
+    nota.innerHTML = `Meta de comida: ${fmtNum(META_MIN)}–${fmtNum(META_MAX)} kcal · ` +
+      `<b>${est.bajo}</b> días por debajo · <b>${est.alto}</b> por encima.` +
+      (keys.includes(hoy) ? ' Hoy (parcial) no entra en los promedios.' : '')
+  }
+}
+
+/* ══════════════════════════════════════
+   PESO
+   pesos: { 'YYYY-MM-DD': kg }   (en ayunas)
+══════════════════════════════════════ */
+let pesos = (() => { try { return JSON.parse(localStorage.getItem('pesos') || '{}') } catch { return {} } })()
+
+function guardarPeso() {
+  const inp = document.getElementById('inp-peso')
+  const kg  = parseFloat(String(inp.value).replace(',', '.'))
+  if (!(kg > 30 && kg < 250)) { toast('Ingresá un peso válido'); return }
+  pesos[hoy] = Math.round(kg * 10) / 10
+  localStorage.setItem('pesos', JSON.stringify(pesos))
+  inp.value = ''
+  renderPeso()
+  toast(`Peso guardado: ${pesos[hoy].toLocaleString('es-AR')} kg`)
+}
+
+function borrarPeso(f) {
+  delete pesos[f]
+  localStorage.setItem('pesos', JSON.stringify(pesos))
+  renderPeso()
+}
+
+function _promPeso(desde, hasta) {   // fechas inclusive, 'YYYY-MM-DD'
+  const v = Object.keys(pesos).filter(f => f >= desde && f <= hasta).map(f => pesos[f])
+  return v.length ? { prom: v.reduce((a, b) => a + b, 0) / v.length, n: v.length } : null
+}
+
+function renderPeso() {
+  const res   = document.getElementById('peso-resumen')
+  const lista = document.getElementById('peso-lista')
+  if (!res || !lista) return
+  const fechas = Object.keys(pesos).sort().reverse()
+  const d = n => { const x = new Date(hoy + 'T12:00:00'); x.setDate(x.getDate() - n); return fechaLocal(x) }
+
+  const actual   = _promPeso(d(6), hoy)
+  const anterior = _promPeso(d(13), d(7))
+  const kg = n => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+  if (!actual) {
+    res.innerHTML = 'Pesate 3 o 4 veces por semana en ayunas. Con dos semanas de datos ves si estás bajando de verdad.'
+  } else if (!anterior) {
+    res.innerHTML = `Promedio últimos 7 días: <b>${kg(actual.prom)} kg</b> (${actual.n} ${actual.n === 1 ? 'pesada' : 'pesadas'}). La semana que viene ya se ve la tendencia.`
+  } else {
+    const dif = actual.prom - anterior.prom
+    const cls = dif <= -1 ? 'warn' : dif < -0.2 ? 'ok' : 'flat'
+    const lectura = dif <= -1 ? 'Más de 1 kg por semana: es mucho, conviene comer un poco más.'
+      : dif < -0.2 ? 'Buen ritmo de bajada.'
+      : dif <= 0.2 ? 'Peso estable: el déficit real es menor que el de la app.'
+      : 'Subiendo: revisá el registro de comidas.'
+    res.innerHTML = `Últimos 7 días: <b>${kg(actual.prom)} kg</b> · semana anterior: ${kg(anterior.prom)} kg<br>` +
+      `<span class="peso-dif ${cls}">${dif > 0 ? '+' : ''}${kg(dif)} kg/semana</span> · ${lectura}`
+  }
+
+  lista.innerHTML = fechas.slice(0, 7).map(f => {
+    const dia = new Date(f + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'numeric' })
+    return `<div class="peso-row"><span>${dia}</span><span><b>${kg(pesos[f])} kg</b>
+      <button class="peso-x" onclick="borrarPeso('${f}')" aria-label="Borrar">×</button></span></div>`
+  }).join('')
 }
 
 /* ══════════════════════════════════════
