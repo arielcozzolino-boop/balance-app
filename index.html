@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080808">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <div class="app">
@@ -44,6 +44,15 @@
           <div class="s-label">Gastadas</div>
           <div class="s-val green" id="stat-gas">2200<span class="s-unit">kcal</span></div>
         </div>
+      </div>
+
+      <div class="meta-card" id="meta-card">
+        <div class="meta-top">
+          <span class="meta-label">Plan del día</span>
+          <span class="meta-range">1.600 – 1.800 kcal</span>
+        </div>
+        <div class="meta-bar"><div class="meta-band"></div><div class="meta-fill" id="meta-fill"></div></div>
+        <div class="meta-txt" id="meta-txt">—</div>
       </div>
 
       <div class="ah-card" id="ah-card">
@@ -187,6 +196,20 @@
         <div class="chart-bars" id="chart-bars"></div>
       </div>
       <div class="prog-stats" id="prog-stats"></div>
+      <div class="prog-nota" id="prog-nota"></div>
+
+      <div class="peso-card">
+        <div class="chart-header">
+          <span class="chart-title">Peso en ayunas</span>
+        </div>
+        <div class="peso-form">
+          <div class="inp-wrap filled"><label class="inp-label">Peso de hoy (kg)</label>
+            <input class="inp" id="inp-peso" type="text" inputmode="decimal" autocomplete="off" placeholder="89,0"/></div>
+          <button class="peso-btn" onclick="guardarPeso()">Guardar</button>
+        </div>
+        <div class="peso-resumen" id="peso-resumen"></div>
+        <div class="peso-lista" id="peso-lista"></div>
+      </div>
     </div>
 
     <!-- ── HISTORIAL ── -->
@@ -287,9 +310,9 @@
     <button class="fm-confirm-btn" onclick="confirmarFotoItems()">Confirmar y agregar</button>
   </div>
 </div>
-<script src="alimentos.js?v=18"></script>
-<script src="app.js?v=18"></script>
-<script src="plan.js?v=18"></script>
+<script src="alimentos.js?v=19"></script>
+<script src="app.js?v=19"></script>
+<script src="plan.js?v=19"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => reg && reg.update()).catch(() => {})
